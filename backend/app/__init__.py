@@ -1,27 +1,28 @@
-import pymysql
-pymysql.install_as_MySQLdb()
-
+import os
 from flask import Flask
 from flask_cors import CORS
 from .models.models import db
-from .routes.routes import api  # Importar o blueprint
+from .routes.routes import api
 from dotenv import load_dotenv
-import os
 
-load_dotenv()
+# Carregar variáveis de ambiente apropriadas
+if os.getenv('FLASK_ENV') == 'production':
+    load_dotenv('.env.production')
+else:
+    load_dotenv()
 
 def create_app():
     app = Flask(__name__)
-    CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+    CORS(app)
      
     # Configuração do banco de dados
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+    if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
+        app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://')
+    
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # Inicializar o banco de dados
     db.init_app(app)
-    
-    # Registrar o blueprint
     app.register_blueprint(api, url_prefix='/api')
     
     return app
