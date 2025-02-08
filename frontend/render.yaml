@@ -15,8 +15,13 @@ services:
         fromDatabase:
           name: valex-db
           property: connectionString
+      - key: SQLALCHEMY_DATABASE_URI  # Adicionando esta linha
+        fromDatabase:
+          name: valex-db
+          property: connectionString
 
 databases:
   - name: valex-db
     databaseName: valex
     user: valex
+    plan: free
