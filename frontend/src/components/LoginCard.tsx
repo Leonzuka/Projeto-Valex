@@ -17,9 +17,18 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
 
   useEffect(() => {
     if (type === 'cooperado') {
-      axios.get(`${process.env.REACT_APP_API_URL}/api/produtores`)
-        .then(response => setProdutores(response.data))
-        .catch(error => console.error('Erro ao carregar produtores:', error));
+      // Verificar se a URL da API está definida
+      const apiUrl = process.env.REACT_APP_API_URL || 'https://projeto-valex-1.onrender.com';
+      
+      axios.get(`${apiUrl}/api/produtores`)
+        .then(response => {
+          console.log('Resposta da API:', response.data); // Para debug
+          setProdutores(response.data);
+        })
+        .catch(error => {
+          console.error('Erro ao carregar produtores:', error);
+          console.error('URL da requisição:', `${apiUrl}/api/produtores`); // Para debug
+        });
     }
   }, [type]);
 

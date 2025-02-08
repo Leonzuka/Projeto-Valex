@@ -14,62 +14,109 @@ mysql_conn = pymysql.connect(
 )
 
 # Conexão PostgreSQL (destino)
-pg_conn = psycopg2.connect(os.getenv('DATABASE_URL'))
+DATABASE_URL = "postgresql://valex_3u5h_user:4nyZin0QCeeQCo88LuQhXjKClrS6Muus@dpg-cujrttlds78s739it6a0-a.oregon-postgres.render.com/valex_3u5h"
+pg_conn = psycopg2.connect(DATABASE_URL)
 
 try:
-    # Exportar dados do MySQL
     with mysql_conn.cursor() as mysql_cursor:
-        # Variedade
+        # Verificar dados antes da migração
+        print("\nVerificando IDs de fazendas referenciados em atividades...")
+        mysql_cursor.execute("""
+            SELECT DISTINCT a.fazenda_id 
+            FROM atividade a 
+            LEFT JOIN fazenda f ON a.fazenda_id = f.id 
+            WHERE f.id IS NULL
+        """)
+        missing_fazendas = mysql_cursor.fetchall()
+        if missing_fazendas:
+            print("⚠️ Encontradas atividades com fazendas inexistentes:")
+            for mf in missing_fazendas:
+                print(f"Fazenda ID: {mf[0]}")
+
+        # Verificar fazendas
+        print("\nVerificando fazendas no MySQL...")
+        mysql_cursor.execute("SELECT id, nome FROM fazenda ORDER BY id")
+        fazendas_check = mysql_cursor.fetchall()
+        print("Fazendas disponíveis:")
+        for f in fazendas_check:
+            print(f"ID: {f[0]}, Nome: {f[1]}")
+
+        # Verificar atividades
+        print("\nVerificando atividades no MySQL...")
+        mysql_cursor.execute("SELECT id, fazenda_id FROM atividade ORDER BY id")
+        atividades_check = mysql_cursor.fetchall()
+        print("Atividades e suas fazendas:")
+        for a in atividades_check:
+            print(f"Atividade ID: {a[0]}, Fazenda ID: {a[1]}")
+
+        # Proceder com a migração normal...
+        print("\nIniciando migração...")
+        
         mysql_cursor.execute("SELECT * FROM variedade")
         variedades = mysql_cursor.fetchall()
         
-        # Produtor
         mysql_cursor.execute("SELECT * FROM produtor")
         produtores = mysql_cursor.fetchall()
         
-        # Fazenda
         mysql_cursor.execute("SELECT * FROM fazenda")
         fazendas = mysql_cursor.fetchall()
         
-        # Atividade
         mysql_cursor.execute("SELECT * FROM atividade")
         atividades = mysql_cursor.fetchall()
 
-    # Importar dados no PostgreSQL
     with pg_conn.cursor() as pg_cursor:
-        # Variedade
+        # Limpar tabelas
+        print("\nLimpando tabelas...")
+        pg_cursor.execute("TRUNCATE TABLE atividade, fazenda, produtor, variedade CASCADE")
+        
+        # Inserir dados
+        print("\nInserindo variedades...")
         for v in variedades:
             pg_cursor.execute(
                 "INSERT INTO variedade (id, nome, created_at, updated_at) VALUES (%s, %s, %s, %s)",
                 v
             )
         
-        # Produtor
+        print("Inserindo produtores...")
         for p in produtores:
             pg_cursor.execute(
                 "INSERT INTO produtor (id, nome, ggn, sigla, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s)",
                 p
             )
         
-        # Fazenda
+        print("Inserindo fazendas...")
+        inserted_fazendas = set()
         for f in fazendas:
-            pg_cursor.execute(
-                "INSERT INTO fazenda (id, nome, area_parcela, produtor_id, variedade_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                f
-            )
+            try:
+                pg_cursor.execute(
+                    "INSERT INTO fazenda (id, nome, area_parcela, produtor_id, variedade_id, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    f
+                )
+                inserted_fazendas.add(f[0])  # Adiciona o ID da fazenda inserida ao conjunto
+            except Exception as e:
+                print(f"⚠️ Erro ao inserir fazenda {f[0]}: {e}")
         
-        # Atividade
+        print("\nFazendas inseridas:", sorted(list(inserted_fazendas)))
+        
+        print("\nInserindo atividades...")
         for a in atividades:
-            pg_cursor.execute(
-                "INSERT INTO atividade (id, produtor_id, fazenda_id, variedade_id, tipo_atividade, quantidade_pallets, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-                a
-            )
+            if a[2] not in inserted_fazendas:  # a[2] é o fazenda_id
+                print(f"⚠️ Pulando atividade {a[0]} - Fazenda {a[2]} não existe")
+                continue
+            try:
+                pg_cursor.execute(
+                    "INSERT INTO atividade (id, produtor_id, fazenda_id, variedade_id, tipo_atividade, quantidade_pallets, created_at, updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                    a
+                )
+            except Exception as e:
+                print(f"⚠️ Erro ao inserir atividade {a[0]}: {e}")
 
     pg_conn.commit()
-    print("Migração concluída com sucesso!")
+    print("\nMigração concluída com sucesso! 🎉")
 
 except Exception as e:
     print(f"Erro durante a migração: {e}")
+    print("Detalhes:", getattr(e, 'diag', ''))
     pg_conn.rollback()
 
 finally:
