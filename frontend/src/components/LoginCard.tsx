@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './LoginCard.css';
+import { API_URL } from '../config/api';
 
 interface LoginCardProps {
   type: 'gestor' | 'cooperado';
@@ -16,7 +17,7 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
 
   useEffect(() => {
     if (type === 'cooperado') {
-      axios.get('http://localhost:5000/api/produtores')
+      axios.get(`${process.env.REACT_APP_API_URL}/api/produtores`)
         .then(response => setProdutores(response.data))
         .catch(error => console.error('Erro ao carregar produtores:', error));
     }

@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: valex-api
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn run:app"
+    envVars:
+      - key: FLASK_APP
+        value: app
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: valex-db
+          property: connectionString
+
+  - type: web
+    name: valex-frontend
+    env: static
+    buildCommand: "npm install && npm run build"
+    staticPublishPath: ./build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://valex-api.onrender.com
+
+databases:
+  - name: valex-db
+    databaseName: valex
+    user: valex
