@@ -2,12 +2,14 @@ services:
   - type: web
     name: valex-api
     env: python
-    buildCommand: "cd backend && ./build.sh"
-    startCommand: "cd backend && gunicorn run:app"
+    buildCommand: "cd backend && chmod +x build.sh && ./build.sh"
+    startCommand: "cd backend && gunicorn wsgi:app"
     rootDir: backend
     envVars:
       - key: FLASK_APP
-        value: app
+        value: run.py
+      - key: PYTHON_VERSION
+        value: 3.9.0
       - key: FLASK_ENV
         value: production
       - key: DATABASE_URL
@@ -26,6 +28,6 @@ services:
         value: https://valex-api.onrender.com
 
 databases:
-  - name: Valex
-    databaseName: Valex
-    user: valex_3u5h_user
+  - name: valex-db
+    databaseName: valex
+    user: valex
