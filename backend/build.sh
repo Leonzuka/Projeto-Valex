@@ -1,3 +1,4 @@
+# build.sh
 #!/bin/bash
 # Atualizar pip
 python -m pip install --upgrade pip
@@ -5,11 +6,8 @@ python -m pip install --upgrade pip
 # Instalar dependências
 pip install -r requirements.txt
 
-# Criar diretório para migrations se não existir
-mkdir -p migrations
-
 # Inicializar migrations
-export FLASK_APP=run.py
+export FLASK_APP=app.py
 flask db init || true
 flask db migrate
 flask db upgrade

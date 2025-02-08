@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from ..models.models import db, Produtor, Fazenda, Variedade, Atividade
+from models.models import db, Produtor, Fazenda, Variedade, Atividade
 from datetime import datetime
 
 # Criar Blueprint
