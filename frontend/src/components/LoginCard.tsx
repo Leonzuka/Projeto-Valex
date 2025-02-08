@@ -19,18 +19,17 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
 
   useEffect(() => {
     if (type === 'cooperado') {
-      // Usar a URL base definida
-      axios.get(`${API_URL}/api/produtores`)
+      axios.get(`${API_URL}/produtores`)  // Removido o /api
         .then(response => {
-          console.log('Dados recebidos:', response.data); // Para debug
+          console.log('Dados recebidos:', response.data);
           setProdutores(response.data);
         })
         .catch(error => {
           console.error('Erro completo:', error);
-          console.error('URL tentada:', `${API_URL}/api/produtores`);
+          console.error('URL tentada:', `${API_URL}/produtores`);
         });
     }
-  }, [type]);
+}, [type]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();

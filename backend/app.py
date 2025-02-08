@@ -8,8 +8,9 @@ import os
 
 def create_app():
     app = Flask(__name__)
-    CORS(app)
-     
+    
+    # Configurar CORS corretamente
+    CORS(app, resources={r"/*": {"origins": "*"}})
     # Carregar variáveis de ambiente
     load_dotenv()
     
@@ -29,6 +30,6 @@ def create_app():
     migrate = Migrate(app, db)
     
     # Registrar blueprint
-    app.register_blueprint(api, url_prefix='/api')
+    app.register_blueprint(api)
     
     return app
