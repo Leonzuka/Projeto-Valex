@@ -17,7 +17,10 @@
 body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden; /* Previne rolagem horizontal */
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .container {
@@ -26,10 +29,12 @@ body {
   min-height: 100vh;
   background: var(--bg-gradient);
   position: relative;
-  width: 100vw; /* Alterado */
+  width: 100%;
+  max-width: 100%;
   overflow-x: hidden;
-  margin: 0; /* Adicionado */
-  padding: 0; /* Adicionado */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .content {

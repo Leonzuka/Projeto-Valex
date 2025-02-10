@@ -32,7 +32,10 @@ def create_produtor():
     novo_produtor = Produtor(
         nome=data['nome'],
         ggn=data.get('ggn'),  # opcional
-        sigla=data['sigla']
+        sigla=data['sigla'],
+        telefone=data.get('telefone'),  # novos campos
+        email=data.get('email'),
+        endereco=data.get('endereco')
     )
     db.session.add(novo_produtor)
     db.session.commit()
@@ -40,7 +43,10 @@ def create_produtor():
         'id': novo_produtor.id,
         'nome': novo_produtor.nome,
         'ggn': novo_produtor.ggn,
-        'sigla': novo_produtor.sigla
+        'sigla': novo_produtor.sigla,
+        'telefone': novo_produtor.telefone,
+        'email': novo_produtor.email,
+        'endereco': novo_produtor.endereco
     }), 201
 
 @api.route('/produtores/<int:id>', methods=['PUT'])
@@ -51,13 +57,19 @@ def update_produtor(id):
     produtor.nome = data.get('nome', produtor.nome)
     produtor.ggn = data.get('ggn', produtor.ggn)
     produtor.sigla = data.get('sigla', produtor.sigla)
+    produtor.telefone = data.get('telefone', produtor.telefone)
+    produtor.email = data.get('email', produtor.email)
+    produtor.endereco = data.get('endereco', produtor.endereco)
     
     db.session.commit()
     return jsonify({
         'id': produtor.id,
         'nome': produtor.nome,
         'ggn': produtor.ggn,
-        'sigla': produtor.sigla
+        'sigla': produtor.sigla,
+        'telefone': produtor.telefone,
+        'email': produtor.email,
+        'endereco': produtor.endereco
     })
 
 @api.route('/produtores/<int:id>', methods=['DELETE'])

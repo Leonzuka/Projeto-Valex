@@ -10,6 +10,9 @@ class Produtor(db.Model):
     nome = db.Column(db.String(100), nullable=False)
     ggn = db.Column(db.String(13), unique=True)
     sigla = db.Column(db.String(5), nullable=False)
+    telefone = db.Column(db.String(20))  # Novo campo
+    email = db.Column(db.String(100))    # Novo campo
+    endereco = db.Column(db.String(255)) # Novo campo
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -31,6 +34,7 @@ class Fazenda(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nome = db.Column(db.String(100), nullable=False)
     area_parcela = db.Column(db.String(20), nullable=False)
+    area_total = db.Column(db.Float)     # Novo campo
     produtor_id = db.Column(db.Integer, db.ForeignKey('produtor.id'), nullable=False)
     variedade_id = db.Column(db.Integer, db.ForeignKey('variedade.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
