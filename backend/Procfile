@@ -1,0 +1,3 @@
+Arquivo: backend/Procfile
+Conteúdo:
+web: gunicorn 'wsgi:app'

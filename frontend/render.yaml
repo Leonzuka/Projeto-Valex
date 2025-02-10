@@ -3,7 +3,7 @@ services:
     name: valex-api
     env: python
     buildCommand: "cd backend && chmod +x build.sh && ./build.sh"
-    startCommand: "cd backend && gunicorn wsgi:app"
+    startCommand: "cd backend && gunicorn 'wsgi:app'"
     rootDir: backend
     envVars:
       - key: FLASK_APP
