@@ -1,10 +1,9 @@
 FROM python:3.9-slim
 
-# Instalar dependências do sistema (pkg-config e as bibliotecas do MySQL/MariaDB)
+# Instalar dependências do sistema (pkg-config e as bibliotecas necessárias para MySQL/MariaDB)
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libmariadb-dev \
-    libmysqlclient-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
