@@ -10,12 +10,12 @@ import os
 def create_app():
     app = Flask(__name__)
     
-    # Configuração CORS atualizada
+    # Atualize a configuração CORS
     CORS(app, 
-         origins=["https://aware-gentleness.railway.internal",
-                 "https://*.railway.internal",
-                 "https://*.up.railway.app"],
-         supports_credentials=True)
+         origins=["https://frontend-production-dde7.up.railway.app"],
+         supports_credentials=True,
+         allow_headers=["Content-Type", "Authorization"],
+         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
      
     # Carregar variáveis de ambiente
     load_dotenv()

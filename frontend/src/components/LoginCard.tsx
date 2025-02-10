@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './LoginCard.css';
 
-axios.defaults.withCredentials = true;
-
 // Definir a URL base diretamente
 const API_URL = process.env.REACT_APP_API_URL || 'https://projeto-valex-production.up.railway.app/api';
+axios.defaults.withCredentials = true;
 
 interface LoginCardProps {
   type: 'gestor' | 'cooperado';
