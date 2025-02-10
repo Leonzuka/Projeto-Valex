@@ -1,9 +1,10 @@
-build:
-  builder: "DOCKERFILE"
-  buildCommand: "python3 -m pip install --upgrade pip && pip install -r requirements.txt"
-  dockerfilePath: "Dockerfile"
-deploy:
-  startCommand: "python3 start.py"
-  restartPolicyType: "ON_FAILURE"
-  healthcheckPath: "/"
-  healthcheckTimeout: 300
+[build]
+  builder = "DOCKERFILE"
+  buildCommand = "python3 -m pip install --upgrade pip && pip install -r requirements.txt"
+  dockerfilePath = "Dockerfile"
+
+[deploy]
+  startCommand = "python3 start.py"
+  restartPolicyType = "ON_FAILURE"
+  healthcheckPath = "/"
+  healthcheckTimeout = 300
