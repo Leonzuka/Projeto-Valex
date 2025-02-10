@@ -7,11 +7,9 @@ from dotenv import load_dotenv
 import os
 
 def create_app():
-    # Definindo o caminho absoluto para a pasta build
-    static_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend', 'build')
-    
-    app = Flask(__name__, static_folder=static_folder, static_url_path='')
-    CORS(app)
+    app = Flask(__name__)
+    # Permitir requisições do frontend
+    CORS(app, origins=[os.getenv('FRONTEND_URL', 'http://localhost:3000')])
      
     # Carregar variáveis de ambiente
     load_dotenv()
