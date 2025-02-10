@@ -8,7 +8,10 @@ import os
 
 def create_app():
     app = Flask(__name__)
-    CORS(app, origins=[os.getenv('FRONTEND_URL', 'http://localhost:3000')])
+    CORS(app, origins=['https://frontend-production-dde7.up.railway.app', 'http://localhost:3000'], 
+     methods=['GET', 'POST', 'PUT', 'DELETE'],
+     allow_headers=['Content-Type'],
+     supports_credentials=True)
      
     # Carregar variáveis de ambiente
     load_dotenv()

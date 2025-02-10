@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './LoginCard.css';
 
+axios.defaults.withCredentials = true;
+
 // Definir a URL base diretamente
-const API_URL = process.env.REACT_APP_API_URL || 'projeto-valex-production.up.railway.app/api';
+const API_URL = 'https://projeto-valex-production.up.railway.app/api';
 
 interface LoginCardProps {
   type: 'gestor' | 'cooperado';
@@ -19,15 +21,12 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
 
   useEffect(() => {
     if (type === 'cooperado') {
-        axios.get(`${API_URL}/produtores`)
-            .then(response => {
-                console.log('Dados recebidos:', response.data);
-                setProdutores(response.data);
-            })
-            .catch(error => {
-                console.error('Erro na requisição:', error);
-                alert('Erro ao carregar lista de produtores. Por favor, tente novamente.');
-            });
+      axios.get(`${API_URL}/produtores`, {
+        headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        }
+    })
     }
 }, [type]);
 
