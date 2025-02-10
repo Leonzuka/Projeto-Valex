@@ -21,7 +21,6 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
   useEffect(() => {
     if (type === 'cooperado') {
         axios.get(`${API_URL}/produtores`, {
-            withCredentials: true,
             headers: {
                 'Content-Type': 'application/json'
             }
@@ -31,6 +30,7 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
             setProdutores(response.data);
         })
         .catch(error => {
+            console.error('Erro completo:', error);
             console.error('Erro detalhado:', error.response?.data || error.message);
             alert('Erro ao carregar lista de produtores. Por favor, tente novamente.');
         });

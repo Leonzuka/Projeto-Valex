@@ -8,13 +8,19 @@ api = Blueprint('api', __name__)
 # Rotas para Produtor
 @api.route('/produtores', methods=['GET'])
 def get_produtores():
-    produtores = Produtor.query.all()
-    return jsonify([{
-        'id': p.id,
-        'nome': p.nome,
-        'ggn': p.ggn,
-        'sigla': p.sigla
-    } for p in produtores])
+    try:
+        app.logger.info('Iniciando busca de produtores')
+        produtores = Produtor.query.all()
+        app.logger.info(f'Produtores encontrados: {len(produtores)}')
+        return jsonify([{
+            'id': p.id,
+            'nome': p.nome,
+            'ggn': p.ggn,
+            'sigla': p.sigla
+        } for p in produtores])
+    except Exception as e:
+        app.logger.error(f'Erro ao buscar produtores: {str(e)}')
+        return jsonify({'error': str(e)}), 500
 
 @api.route('/produtores/<int:id>', methods=['GET'])
 def get_produtor(id):
