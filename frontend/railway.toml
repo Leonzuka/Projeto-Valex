@@ -10,3 +10,4 @@ restartPolicyType = "ON_FAILURE"
 
 [env]
 NODE_OPTIONS = "--max-old-space-size=512"
+REACT_APP_API_URL = "https://projeto-valex.railway.internal/api"
