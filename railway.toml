@@ -6,7 +6,6 @@ buildCommand = "python3 -m pip install --upgrade pip && pip install -r requireme
 startCommand = "gunicorn --bind 0.0.0.0:$PORT app:create_app"
 healthcheckPath = "/"
 healthcheckTimeout = 300
-healthcheckInterval = 30
 
 [deploy.healthcheck]
 path = "/"

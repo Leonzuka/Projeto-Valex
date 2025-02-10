@@ -20,5 +20,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Expõe a porta que a aplicação vai usar
 EXPOSE 8000
 
+# Script para iniciar com a porta correta
+COPY backend/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 # Comando para iniciar a aplicação
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:create_app()"]
+CMD ["/app/start.sh"]
