@@ -6,7 +6,7 @@ import './LoginCard.css';
 axios.defaults.withCredentials = true;
 
 // Definir a URL base diretamente
-const API_URL = process.env.REACT_APP_API_URL || 'https://projeto-valex.railway.internal/api';
+const API_URL = process.env.REACT_APP_API_URL || 'https://projeto-valex-production.up.railway.app/api';
 
 interface LoginCardProps {
   type: 'gestor' | 'cooperado';
