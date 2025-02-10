@@ -17,11 +17,14 @@ def create_app():
     DATABASE_URL = os.getenv('DATABASE_URL')
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL não está configurada")
-        
-    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-    if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
-        app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://')
     
+    # Garantir que a URL do banco de dados esteja completa
+    if 'railway' in DATABASE_URL and '@' in DATABASE_URL and ':' in DATABASE_URL.split('@')[1]:
+        host = DATABASE_URL.split('@')[1].split(':')[0]
+        if not host:
+            DATABASE_URL = DATABASE_URL.replace('@:', '@monorail.proxy.rlwy.net:')
+    
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Inicializar extensões
