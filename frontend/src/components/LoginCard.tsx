@@ -4,7 +4,7 @@ import axios from 'axios';
 import './LoginCard.css';
 
 // Definir a URL base diretamente
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 interface LoginCardProps {
   type: 'gestor' | 'cooperado';
@@ -19,15 +19,15 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
 
   useEffect(() => {
     if (type === 'cooperado') {
-      axios.get(`${API_URL}/produtores`)  // Removido o /api
-        .then(response => {
-          console.log('Dados recebidos:', response.data);
-          setProdutores(response.data);
-        })
-        .catch(error => {
-          console.error('Erro completo:', error);
-          console.error('URL tentada:', `${API_URL}/produtores`);
-        });
+        axios.get(`${API_URL}/produtores`)
+            .then(response => {
+                console.log('Dados recebidos:', response.data);
+                setProdutores(response.data);
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                alert('Erro ao carregar lista de produtores. Por favor, tente novamente.');
+            });
     }
 }, [type]);
 

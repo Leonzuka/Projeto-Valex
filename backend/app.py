@@ -8,7 +8,6 @@ import os
 
 def create_app():
     app = Flask(__name__)
-    # Permitir requisições do frontend
     CORS(app, origins=[os.getenv('FRONTEND_URL', 'http://localhost:3000')])
      
     # Carregar variáveis de ambiente
@@ -33,12 +32,8 @@ def create_app():
     
     # Registrar blueprint para API
     app.register_blueprint(api, url_prefix='/api')
-    
-    @app.route('/', defaults={'path': ''})
-    @app.route('/<path:path>')
-    def serve(path):
-        if path and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
-        return send_from_directory(app.static_folder, 'index.html')
+    @app.route('/')
+    def home():
+        return jsonify({"message": "API está funcionando"}), 200
     
     return app
