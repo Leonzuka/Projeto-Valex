@@ -21,12 +21,19 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
 
   useEffect(() => {
     if (type === 'cooperado') {
-      axios.get(`${API_URL}/produtores`, {
-        headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        }
-    })
+        axios.get(`${API_URL}/produtores`, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            console.log('Dados recebidos:', response.data);
+            setProdutores(response.data);
+        })
+        .catch(error => {
+            console.error('Erro na requisição:', error);
+            alert('Erro ao carregar lista de produtores. Por favor, tente novamente.');
+        });
     }
 }, [type]);
 
@@ -82,6 +89,7 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="login-input"
+            autoComplete="new-password" 
           />
           <div className="login-buttons">
             <button type="submit" className="login-button">

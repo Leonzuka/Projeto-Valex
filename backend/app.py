@@ -4,14 +4,18 @@ from flask_cors import CORS
 from models.models import db
 from routes.routes import api
 from dotenv import load_dotenv
+from middleware import setup_cors_middleware
 import os
 
 def create_app():
     app = Flask(__name__)
-    CORS(app, origins=['https://frontend-production-dde7.up.railway.app', 'http://localhost:3000'], 
-     methods=['GET', 'POST', 'PUT', 'DELETE'],
-     allow_headers=['Content-Type'],
-     supports_credentials=True)
+    CORS(app, 
+         resources={r"/api/*": {
+             "origins": ["https://frontend-production-dde7.up.railway.app"],
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "allow_headers": ["Content-Type", "Authorization"],
+             "expose_headers": ["Content-Range", "X-Content-Range"]
+         }})
      
     # Carregar variáveis de ambiente
     load_dotenv()
@@ -29,6 +33,8 @@ def create_app():
     
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    setup_cors_middleware(app)
     
     # Inicializar extensões
     db.init_app(app)
