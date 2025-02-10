@@ -76,7 +76,8 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
     const fetchProdutorData = async () => {
       try {
         // Buscar todos os produtores
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/produtores`);
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/produtores`);
+        console.log('Resposta da API (produtores):', response.data);
         const produtores = response.data;
         
         // Encontrar o produtor pelo nome
@@ -89,12 +90,16 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
           
           // Buscar fazendas do produtor
           const fazendasResponse = await axios.get(
-            `${process.env.REACT_APP_API_URL}/api/fazendas/produtor/${produtorEncontrado.id}`
+            `${process.env.REACT_APP_API_URL}/fazendas/produtor/${produtorEncontrado.id}`
           );
+          console.log('Resposta da API (fazendas):', fazendasResponse.data);
           setFazendas(fazendasResponse.data);
+        } else {
+          console.error('Produtor não encontrado:', cooperadoNome);
         }
       } catch (error) {
         console.error('Erro ao buscar dados do produtor:', error);
+        alert('Erro ao carregar dados. Por favor, tente novamente.');
       }
     };
   
