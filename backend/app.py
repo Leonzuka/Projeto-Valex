@@ -8,28 +8,32 @@ import os
 
 def create_app():
     app = Flask(__name__)
-    
-    # Configurar CORS corretamente
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    CORS(app)
+     
     # Carregar variáveis de ambiente
     load_dotenv()
     
     # Configuração do banco de dados
     DATABASE_URL = os.getenv('DATABASE_URL')
-    if DATABASE_URL:
-        # Garantir que a URL comece com postgresql://
-        if DATABASE_URL.startswith('postgres://'):
-            DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://')
-        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-    else:
-        # URL de fallback usando as credenciais do seu banco
-        app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://valex_3u5h_user:sua_senha@dpg-cujrttlds78s739it6a0-a:5432/valex_3u5h'
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL não está configurada")
         
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
+    if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
+        app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://')
+    
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
     # Inicializar extensões
     db.init_app(app)
     migrate = Migrate(app, db)
     
+    # Adicionar rota de healthcheck
+    @app.route('/')
+    def healthcheck():
+        return jsonify({"status": "healthy"}), 200
+    
     # Registrar blueprint
-    app.register_blueprint(api)
+    app.register_blueprint(api, url_prefix='/api')
     
     return app
