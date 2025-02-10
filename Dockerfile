@@ -17,12 +17,8 @@ COPY backend/ .
 # Instala as dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expõe a porta que a aplicação vai usar
+# Expõe a porta padrão
 EXPOSE 8000
 
-# Script para iniciar com a porta correta
-COPY backend/start.sh /app/start.sh
-RUN chmod +x /app/start.sh
-
 # Comando para iniciar a aplicação
-CMD ["/app/start.sh"]
+CMD ["python3", "start.py"]
