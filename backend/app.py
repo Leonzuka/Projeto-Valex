@@ -1,4 +1,5 @@
-from flask import Flask, jsonify
+# app.py
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from models.models import db
 from routes.routes import api
@@ -6,7 +7,7 @@ from dotenv import load_dotenv
 import os
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='../frontend/build', static_url_path='/')
     CORS(app)
      
     # Carregar variáveis de ambiente
@@ -29,12 +30,16 @@ def create_app():
     # Inicializar extensões
     db.init_app(app)
     
-    # Adicionar rota de healthcheck
-    @app.route('/')
-    def healthcheck():
-        return jsonify({"status": "healthy"}), 200
-    
-    # Registrar blueprint
+    # Registrar blueprint para API
     app.register_blueprint(api, url_prefix='/api')
+    
+    # Rota para servir o frontend
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    def serve(path):
+        if path != "" and os.path.exists(app.static_folder + '/' + path):
+            return send_from_directory(app.static_folder, path)
+        else:
+            return send_from_directory(app.static_folder, 'index.html')
     
     return app
