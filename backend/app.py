@@ -7,7 +7,10 @@ from dotenv import load_dotenv
 import os
 
 def create_app():
-    app = Flask(__name__, static_folder='../frontend/build', static_url_path='/')
+    # Definindo o caminho absoluto para a pasta build
+    static_folder = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend', 'build')
+    
+    app = Flask(__name__, static_folder=static_folder, static_url_path='')
     CORS(app)
      
     # Carregar variáveis de ambiente
@@ -33,13 +36,11 @@ def create_app():
     # Registrar blueprint para API
     app.register_blueprint(api, url_prefix='/api')
     
-    # Rota para servir o frontend
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>')
     def serve(path):
-        if path != "" and os.path.exists(app.static_folder + '/' + path):
+        if path and os.path.exists(os.path.join(app.static_folder, path)):
             return send_from_directory(app.static_folder, path)
-        else:
-            return send_from_directory(app.static_folder, 'index.html')
+        return send_from_directory(app.static_folder, 'index.html')
     
     return app

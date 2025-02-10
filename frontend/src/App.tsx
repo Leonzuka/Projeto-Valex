@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import Homepage from './Homepage';
+import Homepage from './components/Homepage';
 import CooperadoRegistro from './components/CooperadoRegistro';
 
 // Componente wrapper para passar as props corretamente
