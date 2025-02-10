@@ -31,7 +31,7 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
             setProdutores(response.data);
         })
         .catch(error => {
-            console.error('Erro na requisição:', error);
+            console.error('Erro detalhado:', error.response?.data || error.message);
             alert('Erro ao carregar lista de produtores. Por favor, tente novamente.');
         });
     }
