@@ -53,7 +53,7 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
   const fetchResumoDia = useCallback(async () => {
     if (!produtor) return;
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/atividades/resumo/${produtor.id}`);
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/atividades/resumo/${produtor.id}`);
       setResumoDia(response.data);
     } catch (error) {
       console.error('Erro ao buscar resumo do dia:', error);
@@ -110,7 +110,7 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
     const fetchHistorico = async () => {
       if (!produtor?.id) return;
       try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/atividades/historico/${produtor.id}`)
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/atividades/historico/${produtor.id}`)
         setHistorico(response.data);
       } catch (error) {
         console.error('Erro ao buscar histórico:', error);
@@ -133,7 +133,7 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
     if (!fazenda) return;
   
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/atividades`, {
+      await axios.post(`${process.env.REACT_APP_API_URL}/atividades`, {
         produtor_id: produtor.id,
         fazenda_id: parseInt(selectedFazenda),
         variedade_id: fazenda.variedade_id,

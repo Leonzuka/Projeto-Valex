@@ -12,10 +12,12 @@ def create_app():
     
     # Atualize a configuração CORS
     CORS(app, 
-         origins=["https://frontend-production-dde7.up.railway.app"],
-         supports_credentials=True,
-         allow_headers=["Content-Type", "Authorization"],
-         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+         resources={r"/api/*": {
+             "origins": ["https://frontend-production-dde7.up.railway.app"],
+             "supports_credentials": True,
+             "allow_headers": ["Content-Type", "Authorization"],
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+         }})
      
     # Carregar variáveis de ambiente
     load_dotenv()
