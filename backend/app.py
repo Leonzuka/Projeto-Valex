@@ -10,14 +10,16 @@ import os
 def create_app():
     app = Flask(__name__)
     
-    # Atualize a configuração CORS
+    # Configuração CORS atualizada
     CORS(app, 
-     resources={r"/api/*": {
-         "origins": "*",  # Permite todas as origens em desenvolvimento
-         "supports_credentials": True,
-         "allow_headers": ["Content-Type", "Authorization"],
-         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-     }})
+         resources={r"/api/*": {
+             "origins": ["https://frontend-production-dde7.up.railway.app"],
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "allow_headers": ["Content-Type", "Authorization"],
+             "supports_credentials": True,
+             "expose_headers": ["Content-Range", "X-Content-Range"],
+             "max_age": 3600
+         }})
      
     # Carregar variáveis de ambiente
     load_dotenv()
