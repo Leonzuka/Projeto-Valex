@@ -1,14 +1,10 @@
-FROM node:16-alpine
+FROM node:18
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json package-lock.json ./
 RUN npm install
 
 COPY . .
-
-EXPOSE 3000
-
-ENV NODE_ENV=production
-
-CMD ["npm", "start"]
+RUN npm run build
+CMD ["npx", "serve", "-s", "build", "-l", "3000"]
