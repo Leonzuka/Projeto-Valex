@@ -1,12 +1,14 @@
 [build]
-builder = "nixpacks"
-buildCommand = "python3 -m pip install --upgrade pip && pip install -r requirements.txt"
+  builder = "DOCKERFILE"
+  buildCommand = "python3 -m pip install --upgrade pip && pip install -r requirements.txt"
+  dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "gunicorn app:create_app()"
-restartPolicyType = "ON_FAILURE"
-healthcheckPath = "/"
-healthcheckTimeout = 100
+  startCommand = "python3 start.py"
+  restartPolicyType = "ON_FAILURE"
+  healthcheckPath = "/"
+  healthcheckTimeout = 300
+
 
 [deploy.healthcheck]
 interval = "15s"
