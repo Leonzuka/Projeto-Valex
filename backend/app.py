@@ -1,8 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_migrate import Migrate
-from models.models import db  # Mudando a importação
-from routes.routes import api  # Mudando a importação
+from models.models import db
+from routes.routes import api
 from dotenv import load_dotenv
 import os
 
@@ -29,7 +28,6 @@ def create_app():
     
     # Inicializar extensões
     db.init_app(app)
-    migrate = Migrate(app, db)
     
     # Adicionar rota de healthcheck
     @app.route('/')
