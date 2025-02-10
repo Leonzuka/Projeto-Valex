@@ -6,7 +6,7 @@ pip install -r requirements.txt
 """
 
 [deploy]
-startCommand = "gunicorn --bind 0.0.0.0:$PORT app:create_app"
-healthcheckPath = "/"
-healthcheckTimeout = 300
-healthcheckInterval = 30
+  startCommand = "python3 start.py"
+  restartPolicyType = "ON_FAILURE"
+  healthcheckPath = "/"
+  healthcheckTimeout = 300
