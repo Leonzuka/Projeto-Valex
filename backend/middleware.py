@@ -1,3 +1,7 @@
+# middleware.py
+
+from flask import request  # Adicione esta linha no topo do arquivo
+
 def setup_cors_middleware(app):
     @app.after_request
     def after_request(response):
@@ -9,7 +13,7 @@ def setup_cors_middleware(app):
         response.headers['Access-Control-Allow-Origin'] = 'https://frontend-production-dde7.up.railway.app'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'  # Importante!
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Max-Age'] = '3600'
         
         # Permitir cookies
