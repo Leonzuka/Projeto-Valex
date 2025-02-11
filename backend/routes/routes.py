@@ -38,7 +38,6 @@ def create_produtor():
         ggn=data.get('ggn'),  # opcional
         sigla=data['sigla'],
         telefone=data.get('telefone'),  # novos campos
-        email=data.get('email'),
         endereco=data.get('endereco')
     )
     db.session.add(novo_produtor)
@@ -49,7 +48,6 @@ def create_produtor():
         'ggn': novo_produtor.ggn,
         'sigla': novo_produtor.sigla,
         'telefone': novo_produtor.telefone,
-        'email': novo_produtor.email,
         'endereco': novo_produtor.endereco
     }), 201
 
@@ -62,7 +60,6 @@ def update_produtor(id):
     produtor.ggn = data.get('ggn', produtor.ggn)
     produtor.sigla = data.get('sigla', produtor.sigla)
     produtor.telefone = data.get('telefone', produtor.telefone)
-    produtor.email = data.get('email', produtor.email)
     produtor.endereco = data.get('endereco', produtor.endereco)
     
     db.session.commit()
@@ -72,7 +69,6 @@ def update_produtor(id):
         'ggn': produtor.ggn,
         'sigla': produtor.sigla,
         'telefone': produtor.telefone,
-        'email': produtor.email,
         'endereco': produtor.endereco
     })
 
