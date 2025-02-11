@@ -13,4 +13,3 @@ backend/*.pyo
 backend/*.pyd
 backend/.Python
 backend/venv/
-backend/.env
