@@ -9,9 +9,7 @@ api = Blueprint('api', __name__)
 @api.route('/produtores', methods=['GET'])
 def get_produtores():
     try:
-        app.logger.info('Iniciando busca de produtores')
         produtores = Produtor.query.all()
-        app.logger.info(f'Produtores encontrados: {len(produtores)}')
         return jsonify([{
             'id': p.id,
             'nome': p.nome,
@@ -19,8 +17,8 @@ def get_produtores():
             'sigla': p.sigla
         } for p in produtores])
     except Exception as e:
-        app.logger.error(f'Erro ao buscar produtores: {str(e)}')
-        return jsonify({'error': str(e)}), 500
+        current_app.logger.error(f"Erro ao buscar produtores: {str(e)}")
+        return jsonify({"error": "Erro ao buscar produtores", "details": str(e)}), 500
 
 @api.route('/produtores/<int:id>', methods=['GET'])
 def get_produtor(id):
