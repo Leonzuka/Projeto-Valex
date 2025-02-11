@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
-from models.models import db, Produtor, Fazenda, Variedade, Atividade 
+from models.models import db, Produtor, Fazenda, Variedade, Atividade, ClassificacaoUva
 from datetime import datetime
+from pytz import timezone
 
 # Criar Blueprint
 api = Blueprint('api', __name__)
@@ -118,6 +119,7 @@ def create_atividade():
         produtor_id=data['produtor_id'],
         fazenda_id=data['fazenda_id'],
         variedade_id=data['variedade_id'],
+        classificacao_id=data.get('classificacao_id'), 
         tipo_atividade=data['tipo_atividade'],
         quantidade_pallets=data['quantidade_pallets']
     )
@@ -130,50 +132,206 @@ def create_atividade():
 
 @api.route('/atividades/resumo/<int:produtor_id>', methods=['GET'])
 def get_resumo_dia(produtor_id):
-    hoje = datetime.utcnow().date()
-    
-    # Buscar atividades do dia
-    atividades = Atividade.query.filter(
-        Atividade.produtor_id == produtor_id,
-        db.func.date(Atividade.created_at) == hoje
-    ).all()
-    
-    # Calcular totais
-    total_atividades = len(atividades)
-    total_pallets = sum(atividade.quantidade_pallets for atividade in atividades)
-    
-    return jsonify({
-        'total_atividades': total_atividades,
-        'total_pallets': total_pallets
-    })
-
-# routes.py
+    try:
+        hoje = datetime.utcnow().date()
+        
+        # Buscar atividades do dia com informações relacionadas
+        atividades = db.session.query(
+            Atividade,
+            Variedade.nome.label('variedade_nome'),
+            ClassificacaoUva.classificacao.label('classificacao_nome')
+        ).join(
+            Variedade, Atividade.variedade_id == Variedade.id
+        ).outerjoin(  # usando outerjoin pois nem toda atividade tem classificação
+            ClassificacaoUva, Atividade.classificacao_id == ClassificacaoUva.id
+        ).filter(
+            Atividade.produtor_id == produtor_id,
+            db.func.date(Atividade.created_at) == hoje
+        ).all()
+        
+        # Agrupar por variedade e classificação
+        resumo_detalhado = {}
+        total_pallets = 0
+        
+        for atividade, var_nome, class_nome in atividades:
+            total_pallets += atividade.quantidade_pallets
+            
+            # Agrupar por variedade
+            if var_nome not in resumo_detalhado:
+                resumo_detalhado[var_nome] = {
+                    'total_pallets': 0,
+                    'classificacoes': {}
+                }
+            
+            resumo_detalhado[var_nome]['total_pallets'] += atividade.quantidade_pallets
+            
+            # Agrupar por classificação dentro da variedade
+            if class_nome:  # só agrupa se tiver classificação
+                if class_nome not in resumo_detalhado[var_nome]['classificacoes']:
+                    resumo_detalhado[var_nome]['classificacoes'][class_nome] = 0
+                resumo_detalhado[var_nome]['classificacoes'][class_nome] += atividade.quantidade_pallets
+        
+        return jsonify({
+            'total_pallets': total_pallets,
+            'detalhamento': resumo_detalhado
+        })
+    except Exception as e:
+        print(f"Erro ao buscar resumo do dia: {str(e)}")
+        return jsonify({"error": "Erro ao buscar resumo do dia"}), 500
 
 @api.route('/atividades/historico/<int:produtor_id>', methods=['GET'])
 def get_historico_atividades(produtor_id):
     try:
-        atividades = Atividade.query.filter_by(produtor_id=produtor_id)\
-            .order_by(Atividade.created_at.desc())\
-            .limit(50)\
-            .all()
+        # Modificar a query para incluir a classificação
+        atividades = db.session.query(
+            Atividade,
+            Fazenda,
+            Variedade,
+            ClassificacaoUva
+        ).join(
+            Fazenda, Atividade.fazenda_id == Fazenda.id
+        ).join(
+            Variedade, Atividade.variedade_id == Variedade.id
+        ).outerjoin(  # usando outerjoin pois nem toda atividade tem classificação
+            ClassificacaoUva, Atividade.classificacao_id == ClassificacaoUva.id
+        ).filter(
+            Atividade.produtor_id == produtor_id
+        ).order_by(
+            Atividade.created_at.desc()
+        ).limit(50).all()
         
         resultado = []
-        for a in atividades:
-            fazenda = Fazenda.query.get(a.fazenda_id)
-            variedade = Variedade.query.get(a.variedade_id)
+        for a, f, v, c in atividades:
+            # Converter UTC para horário local (Brasil/São Paulo)
+            hora_local = a.created_at.astimezone(timezone('America/Sao_Paulo'))
             
-            if fazenda and variedade:
-                resultado.append({
-                    'id': a.id,
-                    'tipo_atividade': a.tipo_atividade,
-                    'quantidade_pallets': a.quantidade_pallets,
-                    'created_at': a.created_at.strftime('%d/%m/%Y %H:%M'),
-                    'fazenda': fazenda.nome,
-                    'area_parcela': fazenda.area_parcela,
-                    'variedade': variedade.nome
-                })
+            resultado.append({
+                'id': a.id,
+                'tipo_atividade': a.tipo_atividade,
+                'quantidade_pallets': a.quantidade_pallets,
+                'created_at': hora_local.strftime('%d/%m/%Y %H:%M'),
+                'fazenda': f.nome,
+                'area_parcela': f.area_parcela,
+                'variedade': v.nome,
+                'classificacao': c.classificacao if c else None
+            })
         
         return jsonify(resultado)
     except Exception as e:
         print(f"Erro ao buscar histórico: {str(e)}")
         return jsonify({"error": "Erro ao buscar histórico de atividades"}), 500
+    
+@api.route('/classificacoes', methods=['GET'])
+def get_classificacoes():
+    try:
+        classificacoes = db.session.query(ClassificacaoUva).all()
+        return jsonify([{
+            'id': c.id,
+            'classificacao': c.classificacao,
+            'caixa': c.caixa,
+            'cinta': c.cinta,
+            'peso': c.peso,
+            'cumbuca': c.cumbuca
+        } for c in classificacoes])
+    except Exception as e:
+        print(f"Erro ao buscar classificações: {str(e)}")
+        return jsonify({"error": "Erro ao buscar classificações"}), 500
+
+@api.route('/gestor/resumo-geral', methods=['GET'])
+def get_resumo_geral():
+    """
+    Retorna um resumo geral de todos os produtores para o dia atual.
+    Inclui total de pallets e detalhamento por variedade e classificação.
+    """
+    try:
+        hoje = datetime.utcnow().date()
+        
+        # Buscar todos os produtores ativos
+        produtores = Produtor.query.all()
+        resumo_geral = []
+        
+        for produtor in produtores:
+            # Buscar atividades do dia para cada produtor
+            atividades = db.session.query(
+                Atividade,
+                Variedade.nome.label('variedade_nome'),
+                ClassificacaoUva.classificacao.label('classificacao_nome')
+            ).join(
+                Variedade, Atividade.variedade_id == Variedade.id
+            ).outerjoin(
+                ClassificacaoUva, Atividade.classificacao_id == ClassificacaoUva.id
+            ).filter(
+                Atividade.produtor_id == produtor.id,
+                db.func.date(Atividade.created_at) == hoje
+            ).all()
+            
+            # Processar atividades do produtor
+            resumo_detalhado = {}
+            total_pallets = 0
+            
+            for atividade, var_nome, class_nome in atividades:
+                total_pallets += atividade.quantidade_pallets
+                
+                if var_nome not in resumo_detalhado:
+                    resumo_detalhado[var_nome] = {
+                        'total_pallets': 0,
+                        'classificacoes': {}
+                    }
+                
+                resumo_detalhado[var_nome]['total_pallets'] += atividade.quantidade_pallets
+                
+                if class_nome:
+                    if class_nome not in resumo_detalhado[var_nome]['classificacoes']:
+                        resumo_detalhado[var_nome]['classificacoes'][class_nome] = 0
+                    resumo_detalhado[var_nome]['classificacoes'][class_nome] += atividade.quantidade_pallets
+            
+            # Adicionar resumo do produtor ao resumo geral
+            resumo_geral.append({
+                'produtor_id': produtor.id,
+                'produtor_nome': produtor.nome,
+                'produtor_sigla': produtor.sigla,
+                'total_pallets': total_pallets,
+                'detalhamento': resumo_detalhado
+            })
+        
+        return jsonify(resumo_geral)
+    
+    except Exception as e:
+        print(f"Erro ao gerar resumo geral: {str(e)}")
+        return jsonify({"error": "Erro ao gerar resumo geral"}), 500
+    
+@api.route('/gestor/estatisticas', methods=['GET'])
+def get_estatisticas():
+    """
+    Retorna estatísticas gerais do sistema
+    """
+    try:
+        hoje = datetime.utcnow().date()
+        
+        # Total de pallets do dia
+        total_pallets_dia = db.session.query(db.func.sum(Atividade.quantidade_pallets)).filter(
+            db.func.date(Atividade.created_at) == hoje
+        ).scalar() or 0
+        
+        # Total de produtores ativos (que registraram atividade hoje)
+        produtores_ativos = db.session.query(db.func.count(db.distinct(Atividade.produtor_id))).filter(
+            db.func.date(Atividade.created_at) == hoje
+        ).scalar() or 0
+        
+        # Totais por tipo de atividade
+        totais_por_tipo = db.session.query(
+            Atividade.tipo_atividade,
+            db.func.count(Atividade.id).label('quantidade')
+        ).filter(
+            db.func.date(Atividade.created_at) == hoje
+        ).group_by(Atividade.tipo_atividade).all()
+        
+        return jsonify({
+            'total_pallets_dia': total_pallets_dia,
+            'produtores_ativos': produtores_ativos,
+            'atividades_por_tipo': dict(totais_por_tipo)
+        })
+        
+    except Exception as e:
+        print(f"Erro ao buscar estatísticas: {str(e)}")
+        return jsonify({"error": "Erro ao buscar estatísticas"}), 500

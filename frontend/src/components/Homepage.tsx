@@ -41,6 +41,16 @@ function App() {
         </div>
       </div>
 
+      <div className="mt-8 text-center text-gray-600">
+        <p className="mb-2">
+          <strong>Acesso Gestor:</strong> Usuário: adm | Senha: 123
+        </p>
+        <p>
+          <strong>Acesso Cooperados:</strong> Senha padrão: 123
+        </p>
+      </div>
+      
+
       <footer className="footer">
         <div className="footer-content">
           <a href="#" className="footer-link">Contato</a>

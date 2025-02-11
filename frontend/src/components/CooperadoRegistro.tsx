@@ -15,6 +15,15 @@ interface Fazenda {
   variedade_nome: string;
 }
 
+interface Classificacao {
+  id: number;
+  classificacao: string;
+  caixa: string;
+  cinta: string;
+  peso: string;
+  cumbuca: string;
+}
+
 interface Produtor {
   id: number;
   nome: string;
@@ -23,8 +32,15 @@ interface Produtor {
 }
 
 interface ResumoDia {
-  total_atividades: number;
   total_pallets: number;
+  detalhamento: {
+    [variedade: string]: {
+      total_pallets: number;
+      classificacoes: {
+        [classificacao: string]: number;
+      };
+    };
+  };
 }
 
 interface Atividade {
@@ -35,18 +51,21 @@ interface Atividade {
   fazenda: string;
   area_parcela: string;
   variedade: string;
+  classificacao?: string;
 }
 
 const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) => {
   const navigate = useNavigate();
   const [produtor, setProdutor] = useState<Produtor | null>(null);
   const [fazendas, setFazendas] = useState<Fazenda[]>([]);
+  const [classificacoes, setClassificacoes] = useState<Classificacao[]>([]);
   const [selectedFazenda, setSelectedFazenda] = useState<string>('');
+  const [selectedClassificacao, setSelectedClassificacao] = useState<string>('');
   const [tipoAtividade, setTipoAtividade] = useState('');
   const [quantidadePallets, setQuantidadePallets] = useState('');
   const [resumoDia, setResumoDia] = useState<ResumoDia>({
-    total_atividades: 0,
-    total_pallets: 0
+    total_pallets: 0,
+    detalhamento: {}
   });
   const [historico, setHistorico] = useState<Atividade[]>([]);
 
@@ -107,6 +126,19 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
   }, [cooperadoNome]);
 
   useEffect(() => {
+    const fetchClassificacoes = async () => {
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/classificacoes`);
+        setClassificacoes(response.data);
+      } catch (error) {
+        console.error('Erro ao buscar classificações:', error);
+      }
+    };
+
+    fetchClassificacoes();
+  }, []);
+
+  useEffect(() => {
     const fetchHistorico = async () => {
       if (!produtor?.id) return;
       try {
@@ -128,24 +160,25 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!produtor || !selectedFazenda) return;
-  
+
     const fazenda = fazendas.find(f => f.id.toString() === selectedFazenda);
     if (!fazenda) return;
-  
+
     try {
       await axios.post(`${process.env.REACT_APP_API_URL}/atividades`, {
         produtor_id: produtor.id,
         fazenda_id: parseInt(selectedFazenda),
         variedade_id: fazenda.variedade_id,
+        classificacao_id: parseInt(selectedClassificacao),
         tipo_atividade: tipoAtividade,
         quantidade_pallets: tipoAtividade === 'COLHEITA' ? 0 : parseInt(quantidadePallets)
       });
-  
+
       alert('Atividade registrada com sucesso!');
       setSelectedFazenda('');
+      setSelectedClassificacao('');
       setTipoAtividade('');
       setQuantidadePallets('');
-      // Atualizar o resumo do dia
       fetchResumoDia();
     } catch (error) {
       console.error('Erro ao registrar atividade:', error);
@@ -191,74 +224,101 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
       {/* Conteúdo Principal */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Card de Registro de Atividade */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-xl p-8 transform transition-all duration-200 hover:shadow-2xl">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                <svg className="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+            <div className="bg-white rounded-2xl shadow-xl p-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">
                 Registro de Atividade
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tipo de Atividade
-                    </label>
-                    <select
-                      value={tipoAtividade}
-                      onChange={(e) => setTipoAtividade(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white shadow-sm"
-                      required
-                    >
-                      <option value="">Selecione a Atividade</option>
-                      <option value="COLHEITA">Colheita</option>
-                      <option value="EMBALAGEM">Embalagem</option>
-                      <option value="TRANSPORTE">Transporte</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tipo de Atividade
+                  </label>
+                  <select
+                    value={tipoAtividade}
+                    onChange={(e) => setTipoAtividade(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value="">Selecione a Atividade</option>
+                    <option value="COLHEITA">Colheita</option>
+                    <option value="EMBALAGEM">Embalagem</option>
+                    <option value="TRANSPORTE">Transporte</option>
+                  </select>
+                </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fazenda
+                  </label>
+                  <select
+                    value={selectedFazenda}
+                    onChange={(e) => setSelectedFazenda(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value="">Selecione a fazenda</option>
+                    {fazendas.map((fazenda) => (
+                      <option key={fazenda.id} value={fazenda.id}>
+                        {fazenda.nome} - {fazenda.area_parcela}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Variedade
+                  </label>
+                  <input
+                    type="text"
+                    value={fazendas.find(f => f.id.toString() === selectedFazenda)?.variedade_nome || ''}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50"
+                    disabled
+                  />
+                </div>
+
+                {tipoAtividade === 'EMBALAGEM' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fazenda e Variedade
+                      Classificação
                     </label>
                     <select
-                      value={selectedFazenda}
-                      onChange={(e) => setSelectedFazenda(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white shadow-sm"
+                      value={selectedClassificacao}
+                      onChange={(e) => setSelectedClassificacao(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     >
-                      <option value="">Selecione a fazenda</option>
-                      {fazendas.map((fazenda) => (
-                        <option key={fazenda.id} value={fazenda.id}>
-                          {fazenda.nome} - {fazenda.area_parcela} ({fazenda.variedade_nome})
+                      <option value="">Selecione a classificação</option>
+                      {classificacoes.map((classificacao) => (
+                        <option key={classificacao.id} value={classificacao.id}>
+                          {classificacao.classificacao} - {classificacao.peso} - {classificacao.cumbuca}
                         </option>
                       ))}
                     </select>
                   </div>
+                )}
 
-                  {tipoAtividade !== 'COLHEITA' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Quantidade de Pallets
-                      </label>
-                      <input
-                        type="number"
-                        value={quantidadePallets}
-                        onChange={(e) => setQuantidadePallets(e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm"
-                        min="1"
-                        required={tipoAtividade !== 'COLHEITA'}
-                      />
-                    </div>
-                  )}
-                </div>
+                {tipoAtividade !== 'COLHEITA' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Quantidade de Pallets
+                    </label>
+                    <input
+                      type="number"
+                      value={quantidadePallets}
+                      onChange={(e) => setQuantidadePallets(e.target.value)}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      min="1"
+                      required
+                    />
+                  </div>
+                )}
 
                 <button
                   type="submit"
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-102 font-medium text-lg shadow-lg"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
                 >
                   Registrar Atividade
                 </button>
@@ -275,21 +335,31 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
                 </svg>
                 Resumo do Dia
               </h3>
-              
-              <div className="space-y-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Total de Atividades</p>
-                  <p className="text-2xl font-bold text-blue-600">{resumoDia.total_atividades}</p>
-                </div>
-                
+
                 <div className="p-4 bg-green-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Pallets Registrados</p>
+                  <p className="text-sm text-gray-600">Total de Pallets</p>
                   <p className="text-2xl font-bold text-green-600">{resumoDia.total_pallets}</p>
                 </div>
+
+                {resumoDia.detalhamento && Object.entries(resumoDia.detalhamento).map(([variedade, dados]) => (
+                  <div key={variedade} className="p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm font-medium text-gray-700">{variedade}</p>
+                    <p className="text-lg font-semibold text-gray-800">
+                      {dados.total_pallets} pallets
+                    </p>
+                    
+                    {Object.entries(dados.classificacoes).map(([classificacao, quantidade]) => (
+                      <div key={classificacao} className="mt-2 pl-4 border-l-2 border-blue-200">
+                        <p className="text-sm text-gray-600">
+                          {classificacao}: {quantidade} pallets
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        </div>
 
         {/* Histórico de Atividades */}
         <div className="mt-8">
@@ -302,13 +372,14 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
             </h3>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Atividade</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fazenda</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Área</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variedade</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classificação</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pallets</th>
                   </tr>
                 </thead>
@@ -330,6 +401,9 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.fazenda}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.area_parcela}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.variedade}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {atividade.tipo_atividade === 'EMBALAGEM' ? (atividade.classificacao || '-') : '-'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {atividade.tipo_atividade === 'COLHEITA' ? '-' : atividade.quantidade_pallets}
                       </td>

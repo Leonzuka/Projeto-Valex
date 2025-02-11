@@ -46,7 +46,23 @@ class Atividade(db.Model):
     produtor_id = db.Column(db.Integer, db.ForeignKey('produtor.id'), nullable=False)
     fazenda_id = db.Column(db.Integer, db.ForeignKey('fazenda.id'), nullable=False)
     variedade_id = db.Column(db.Integer, db.ForeignKey('variedade.id'), nullable=False)
+    classificacao_id = db.Column(db.Integer, db.ForeignKey('classificacao_uva.id'), nullable=True)  # Nova coluna
     tipo_atividade = db.Column(db.String(20), nullable=False)
     quantidade_pallets = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relacionamentos
+    classificacao = db.relationship('ClassificacaoUva', backref='atividades', lazy=True)
+
+class ClassificacaoUva(db.Model):
+    __tablename__ = 'classificacao_uva'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    classificacao = db.Column(db.String(50), nullable=False)
+    caixa = db.Column(db.String(50), nullable=False)
+    cinta = db.Column(db.String(50))
+    peso = db.Column(db.String(10), nullable=False)
+    cumbuca = db.Column(db.String(20), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

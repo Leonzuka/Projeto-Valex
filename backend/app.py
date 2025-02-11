@@ -13,17 +13,23 @@ def create_app():
     # Configurar logging
     logging.basicConfig(level=logging.DEBUG)
     
-    # Carregar variáveis de ambiente
-    load_dotenv()
+    # Forçar carregamento do arquivo correto baseado no ambiente
+    env = os.getenv('FLASK_ENV', 'production')
+    env_file = '.env.development' if env == 'development' else '.env'
+    
+    app.logger.info(f"Tentando carregar arquivo: {env_file}")
+    load_dotenv(env_file)
     
     # Log das variáveis importantes
+    app.logger.debug(f"Ambiente atual: {env}")
     app.logger.debug(f"DATABASE_URL: {os.getenv('DATABASE_URL')}")
     app.logger.debug(f"FRONTEND_URL: {os.getenv('FRONTEND_URL')}")
     
     # Configuração CORS atualizada
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
     CORS(app, 
          resources={r"/api/*": {
-             "origins": ["https://frontend-production-dde7.up.railway.app"],
+             "origins": [frontend_url],
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
              "allow_headers": ["Content-Type", "Authorization"],
              "supports_credentials": True

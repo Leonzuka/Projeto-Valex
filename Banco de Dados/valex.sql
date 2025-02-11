@@ -31,14 +31,17 @@ CREATE TABLE `atividade` (
   `quantidade_pallets` int NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `classificacao_id` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `produtor_id` (`produtor_id`),
   KEY `fazenda_id` (`fazenda_id`),
   KEY `variedade_id` (`variedade_id`),
+  KEY `fk_atividade_classificacao` (`classificacao_id`),
   CONSTRAINT `atividade_ibfk_2` FOREIGN KEY (`fazenda_id`) REFERENCES `fazenda` (`id`),
   CONSTRAINT `atividade_ibfk_3` FOREIGN KEY (`variedade_id`) REFERENCES `variedade` (`id`),
-  CONSTRAINT `atividade_produtor_fk` FOREIGN KEY (`produtor_id`) REFERENCES `produtor` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  CONSTRAINT `atividade_produtor_fk` FOREIGN KEY (`produtor_id`) REFERENCES `produtor` (`id`),
+  CONSTRAINT `fk_atividade_classificacao` FOREIGN KEY (`classificacao_id`) REFERENCES `classificacao_uva` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -47,8 +50,38 @@ CREATE TABLE `atividade` (
 
 LOCK TABLES `atividade` WRITE;
 /*!40000 ALTER TABLE `atividade` DISABLE KEYS */;
-INSERT INTO `atividade` VALUES (1,1,3,3,'EMBALAGEM',10,'2025-02-08 18:09:34','2025-02-08 15:25:03'),(2,7,621,3,'EMBALAGEM',10,'2025-02-08 18:57:55','2025-02-08 18:57:55'),(3,11,369,4,'EMBALAGEM',10,'2025-02-08 19:00:09','2025-02-08 19:00:09'),(4,1,270,3,'COLHEITA',0,'2025-02-08 19:07:22','2025-02-08 19:07:22'),(5,1,274,1,'COLHEITA',0,'2025-02-08 19:07:31','2025-02-08 19:07:31'),(6,1,270,3,'COLHEITA',0,'2025-02-08 19:10:21','2025-02-08 19:10:21'),(7,1,271,1,'EMBALAGEM',25,'2025-02-08 19:10:28','2025-02-08 19:10:28'),(8,11,369,4,'COLHEITA',0,'2025-02-08 19:14:00','2025-02-08 19:14:00'),(9,11,369,4,'COLHEITA',0,'2025-02-08 19:14:07','2025-02-08 19:14:07'),(10,1,269,2,'COLHEITA',0,'2025-02-08 19:14:16','2025-02-08 19:14:16'),(11,1,268,1,'COLHEITA',0,'2025-02-08 19:23:04','2025-02-08 19:23:04'),(12,1,268,1,'EMBALAGEM',5,'2025-02-08 19:30:27','2025-02-08 19:30:27');
+INSERT INTO `atividade` VALUES (1,1,3,3,'EMBALAGEM',10,'2025-02-08 18:09:34','2025-02-08 15:25:03',NULL),(2,7,621,3,'EMBALAGEM',10,'2025-02-08 18:57:55','2025-02-08 18:57:55',NULL),(3,11,369,4,'EMBALAGEM',10,'2025-02-08 19:00:09','2025-02-08 19:00:09',NULL),(4,1,270,3,'COLHEITA',0,'2025-02-08 19:07:22','2025-02-08 19:07:22',NULL),(5,1,274,1,'COLHEITA',0,'2025-02-08 19:07:31','2025-02-08 19:07:31',NULL),(6,1,270,3,'COLHEITA',0,'2025-02-08 19:10:21','2025-02-08 19:10:21',NULL),(7,1,271,1,'EMBALAGEM',25,'2025-02-08 19:10:28','2025-02-08 19:10:28',NULL),(8,11,369,4,'COLHEITA',0,'2025-02-08 19:14:00','2025-02-08 19:14:00',NULL),(9,11,369,4,'COLHEITA',0,'2025-02-08 19:14:07','2025-02-08 19:14:07',NULL),(10,1,269,2,'COLHEITA',0,'2025-02-08 19:14:16','2025-02-08 19:14:16',NULL),(11,1,268,1,'COLHEITA',0,'2025-02-08 19:23:04','2025-02-08 19:23:04',NULL),(12,1,268,1,'EMBALAGEM',5,'2025-02-08 19:30:27','2025-02-08 19:30:27',NULL),(13,1,281,4,'EMBALAGEM',10,'2025-02-11 09:22:30','2025-02-11 09:22:30',NULL),(14,1,276,3,'EMBALAGEM',10,'2025-02-11 09:31:43','2025-02-11 09:31:43',NULL),(15,1,270,3,'EMBALAGEM',10,'2025-02-11 09:32:48','2025-02-11 09:32:48',NULL),(16,1,288,3,'TRANSPORTE',10,'2025-02-11 09:43:49','2025-02-11 09:43:49',NULL),(17,1,274,1,'EMBALAGEM',10,'2025-02-11 09:58:15','2025-02-11 09:58:15',1);
 /*!40000 ALTER TABLE `atividade` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `classificacao_uva`
+--
+
+DROP TABLE IF EXISTS `classificacao_uva`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `classificacao_uva` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `classificacao` varchar(50) NOT NULL,
+  `caixa` varchar(50) NOT NULL,
+  `cinta` varchar(50) DEFAULT NULL,
+  `peso` varchar(10) NOT NULL,
+  `cumbuca` varchar(20) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `classificacao_uva`
+--
+
+LOCK TABLES `classificacao_uva` WRITE;
+/*!40000 ALTER TABLE `classificacao_uva` DISABLE KEYS */;
+INSERT INTO `classificacao_uva` VALUES (1,'VALEX','VALEX','VALEX','5KG','500G','2025-02-11 05:54:03','2025-02-11 05:54:03'),(2,'VITACE','VITACE','VITACE','5KG','500G','2025-02-11 05:54:03','2025-02-11 05:54:03'),(3,'LINA','LINA','LINA','5KG','500G','2025-02-11 05:54:03','2025-02-11 05:54:03'),(4,'EXTRA','PRETA','GENERICA','5KG','500G','2025-02-11 05:54:03','2025-02-11 05:54:03'),(5,'LININHA','LINA','LININHA','5KG','250G','2025-02-11 05:54:03','2025-02-11 05:54:03'),(6,'VALEX','ISOPOR','-','8KG','SACOLA','2025-02-11 05:54:03','2025-02-11 05:54:03');
+/*!40000 ALTER TABLE `classificacao_uva` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -280,4 +313,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-10 21:24:15
+-- Dump completed on 2025-02-11  4:17:06

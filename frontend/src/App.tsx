@@ -2,13 +2,13 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Homepage from './components/Homepage';
 import CooperadoRegistro from './components/CooperadoRegistro';
+import GestorDashboard from './components/GestorDashboard';
 
 // Componente wrapper para passar as props corretamente
 const CooperadoDashboardWrapper = () => {
   const location = useLocation();
   const state = location.state as { cooperadoNome: string } | null;
   
-  // Redirecionamento se não houver state
   if (!state?.cooperadoNome) {
     return <Homepage />;
   }
@@ -22,7 +22,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Homepage />} />
         <Route path="/cooperado-dashboard" element={<CooperadoDashboardWrapper />} />
-        {/* Adicione outras rotas aqui se necessário */}
+        <Route path="/gestor-dashboard" element={<GestorDashboard />} />
       </Routes>
     </BrowserRouter>
   );
