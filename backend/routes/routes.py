@@ -1,5 +1,5 @@
-from flask import Blueprint, request, jsonify
-from models.models import db, Produtor, Fazenda, Variedade, Atividade  # Mudando a importação
+from flask import Blueprint, request, jsonify, current_app
+from models.models import db, Produtor, Fazenda, Variedade, Atividade 
 from datetime import datetime
 
 # Criar Blueprint
@@ -17,7 +17,7 @@ def get_produtores():
             'sigla': p.sigla
         } for p in produtores])
     except Exception as e:
-        current_app.logger.error(f"Erro ao buscar produtores: {str(e)}")
+        print(f"Erro ao buscar produtores: {str(e)}")  # Log mais simples
         return jsonify({"error": "Erro ao buscar produtores", "details": str(e)}), 500
 
 @api.route('/produtores/<int:id>', methods=['GET'])
