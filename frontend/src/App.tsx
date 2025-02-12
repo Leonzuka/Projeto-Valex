@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Homepage from './components/Homepage';
 import CooperadoRegistro from './components/CooperadoRegistro';
 import GestorDashboard from './components/GestorDashboard';
+import ImportacaoFinanceira from './components/ImportacaoFinanceira';
 
 // Componente wrapper para passar as props corretamente
 const CooperadoDashboardWrapper = () => {
@@ -23,6 +24,7 @@ const App = () => {
         <Route path="/" element={<Homepage />} />
         <Route path="/cooperado-dashboard" element={<CooperadoDashboardWrapper />} />
         <Route path="/gestor-dashboard" element={<GestorDashboard />} />
+        <Route path="/importacao-financeira" element={<ImportacaoFinanceira />} />
       </Routes>
     </BrowserRouter>
   );

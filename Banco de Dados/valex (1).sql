@@ -16,6 +16,31 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `analises_financeiras`
+--
+
+DROP TABLE IF EXISTS `analises_financeiras`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `analises_financeiras` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `periodo_id` int NOT NULL,
+  `tipo_analise` enum('VERTICAL','HORIZONTAL') DEFAULT NULL,
+  `tipo_demonstrativo` enum('BP','DRE','DFC','DMPL') DEFAULT NULL,
+  `conta_id` int NOT NULL,
+  `valor_base` decimal(15,2) DEFAULT NULL,
+  `valor_calculado` decimal(15,2) DEFAULT NULL,
+  `percentual` decimal(8,4) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `periodo_id` (`periodo_id`),
+  KEY `conta_id` (`conta_id`),
+  CONSTRAINT `analises_financeiras_ibfk_1` FOREIGN KEY (`periodo_id`) REFERENCES `periodos_contabeis` (`id`),
+  CONSTRAINT `analises_financeiras_ibfk_2` FOREIGN KEY (`conta_id`) REFERENCES `plano_contas` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `atividade`
 --
 
@@ -66,7 +91,7 @@ CREATE TABLE `balancete_items` (
   `valor_atual` decimal(15,2) DEFAULT NULL,
   `data_importacao` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6725 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7288 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -133,6 +158,53 @@ CREATE TABLE `fazenda` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `fluxo_caixa`
+--
+
+DROP TABLE IF EXISTS `fluxo_caixa`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fluxo_caixa` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `periodo_id` int NOT NULL,
+  `data_movimento` date NOT NULL,
+  `tipo_movimento` enum('OPERACIONAL','INVESTIMENTO','FINANCIAMENTO') DEFAULT NULL,
+  `descricao` varchar(200) DEFAULT NULL,
+  `valor` decimal(15,2) DEFAULT NULL,
+  `natureza` enum('ENTRADA','SAIDA') DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `periodo_id` (`periodo_id`),
+  CONSTRAINT `fluxo_caixa_ibfk_1` FOREIGN KEY (`periodo_id`) REFERENCES `periodos_contabeis` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `fundos_especiais`
+--
+
+DROP TABLE IF EXISTS `fundos_especiais`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `fundos_especiais` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `tipo_fundo` enum('FATES','INVESTIMENTO') DEFAULT NULL,
+  `periodo_id` int NOT NULL,
+  `data_movimento` date NOT NULL,
+  `lancamento_id` int DEFAULT NULL,
+  `valor_movimento` decimal(15,2) DEFAULT NULL,
+  `tipo_movimento` enum('ENTRADA','SAIDA') DEFAULT NULL,
+  `descricao` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `periodo_id` (`periodo_id`),
+  KEY `lancamento_id` (`lancamento_id`),
+  CONSTRAINT `fundos_especiais_ibfk_1` FOREIGN KEY (`periodo_id`) REFERENCES `periodos_contabeis` (`id`),
+  CONSTRAINT `fundos_especiais_ibfk_2` FOREIGN KEY (`lancamento_id`) REFERENCES `lancamentos_contabeis` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `historico_precos`
 --
 
@@ -148,6 +220,27 @@ CREATE TABLE `historico_precos` (
   PRIMARY KEY (`id`),
   KEY `variedade_id` (`variedade_id`),
   CONSTRAINT `historico_precos_ibfk_1` FOREIGN KEY (`variedade_id`) REFERENCES `variedade` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `indicadores_financeiros`
+--
+
+DROP TABLE IF EXISTS `indicadores_financeiros`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `indicadores_financeiros` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `periodo_id` int NOT NULL,
+  `tipo_indicador` varchar(50) NOT NULL,
+  `nome_indicador` varchar(100) NOT NULL,
+  `valor` decimal(15,4) DEFAULT NULL,
+  `formula` text,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `periodo_id` (`periodo_id`),
+  CONSTRAINT `indicadores_financeiros_ibfk_1` FOREIGN KEY (`periodo_id`) REFERENCES `periodos_contabeis` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -171,6 +264,37 @@ CREATE TABLE `inspecoes` (
   KEY `inspetor_id` (`inspetor_id`),
   CONSTRAINT `inspecoes_ibfk_1` FOREIGN KEY (`lote_id`) REFERENCES `lotes` (`id`),
   CONSTRAINT `inspecoes_ibfk_2` FOREIGN KEY (`inspetor_id`) REFERENCES `usuarios` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `lancamentos_contabeis`
+--
+
+DROP TABLE IF EXISTS `lancamentos_contabeis`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `lancamentos_contabeis` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `periodo_id` int NOT NULL,
+  `data_lancamento` date NOT NULL,
+  `numero_lancamento` varchar(20) NOT NULL,
+  `tipo_lancamento` enum('NORMAL','ESTORNO','ABERTURA','FECHAMENTO') DEFAULT NULL,
+  `conta_debito_id` int NOT NULL,
+  `conta_credito_id` int NOT NULL,
+  `valor` decimal(15,2) NOT NULL,
+  `historico` text,
+  `documento_tipo` varchar(50) DEFAULT NULL,
+  `documento_numero` varchar(50) DEFAULT NULL,
+  `usuario_id` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `periodo_id` (`periodo_id`),
+  KEY `conta_debito_id` (`conta_debito_id`),
+  KEY `conta_credito_id` (`conta_credito_id`),
+  CONSTRAINT `lancamentos_contabeis_ibfk_1` FOREIGN KEY (`periodo_id`) REFERENCES `periodos_contabeis` (`id`),
+  CONSTRAINT `lancamentos_contabeis_ibfk_2` FOREIGN KEY (`conta_debito_id`) REFERENCES `plano_contas` (`id`),
+  CONSTRAINT `lancamentos_contabeis_ibfk_3` FOREIGN KEY (`conta_credito_id`) REFERENCES `plano_contas` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -214,7 +338,7 @@ CREATE TABLE `periodos_contabeis` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_ano_mes` (`ano`,`mes`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -226,20 +350,21 @@ DROP TABLE IF EXISTS `plano_contas`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `plano_contas` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `codigo` varchar(20) NOT NULL COMMENT 'Código completo da conta',
-  `codigo_reduzido` varchar(10) DEFAULT NULL COMMENT 'Código reduzido para facilitar lançamentos',
+  `codigo` varchar(20) NOT NULL,
+  `codigo_reduzido` varchar(10) DEFAULT NULL,
   `descricao` varchar(200) NOT NULL,
-  `nivel` int DEFAULT NULL COMMENT 'Nível hierárquico da conta',
+  `nivel` int DEFAULT NULL,
   `conta_pai_id` int DEFAULT NULL,
   `tipo_conta` enum('ATIVO','PASSIVO','RECEITA','DESPESA','PATRIMONIO_LIQUIDO') DEFAULT NULL,
   `natureza_saldo` enum('DEVEDOR','CREDOR') DEFAULT NULL,
-  `permite_lancamento` tinyint(1) DEFAULT '1' COMMENT 'Indica se a conta pode receber lançamentos',
+  `permite_lancamento` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_codigo` (`codigo`),
-  KEY `conta_pai_id` (`conta_pai_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `conta_pai_id` (`conta_pai_id`),
+  CONSTRAINT `plano_contas_ibfk_1` FOREIGN KEY (`conta_pai_id`) REFERENCES `plano_contas` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -339,4 +464,4 @@ CREATE TABLE `variedade` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-12 19:53:48
+-- Dump completed on 2025-02-12 19:59:30

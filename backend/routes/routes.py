@@ -112,6 +112,23 @@ def get_fazendas_by_produtor(produtor_id):
         'variedade_nome': f.variedade.nome
     } for f in fazendas])
 
+@api.route('/fazendas/<int:fazenda_id>/variedades', methods=['GET'])
+def get_variedades_by_fazenda(fazenda_id):
+    try:
+        fazenda = Fazenda.query.get_or_404(fazenda_id)
+        variedades = db.session.query(Variedade)\
+            .join(Fazenda, Fazenda.variedade_id == Variedade.id)\
+            .filter(Fazenda.nome == fazenda.nome)\
+            .distinct()\
+            .all()
+            
+        return jsonify([{
+            'id': v.id,
+            'nome': v.nome
+        } for v in variedades])
+    except Exception as e:
+        return jsonify({"error": "Erro ao buscar variedades"}), 500
+
 @api.route('/atividades', methods=['POST'])
 def create_atividade():
     data = request.get_json()
@@ -121,7 +138,8 @@ def create_atividade():
         variedade_id=data['variedade_id'],
         classificacao_id=data.get('classificacao_id'), 
         tipo_atividade=data['tipo_atividade'],
-        quantidade_pallets=data['quantidade_pallets']
+        quantidade_pallets=data['quantidade_pallets'],
+        caixas=data.get('caixas')  # Adicionando caixas
     )
     db.session.add(nova_atividade)
     db.session.commit()
@@ -182,39 +200,35 @@ def get_resumo_dia(produtor_id):
 @api.route('/atividades/historico/<int:produtor_id>', methods=['GET'])
 def get_historico_atividades(produtor_id):
     try:
-        # Modificar a query para incluir a classificação
+        # Adiciona índices para melhorar performance
         atividades = db.session.query(
             Atividade,
-            Fazenda,
-            Variedade,
-            ClassificacaoUva
+            Fazenda.nome.label('fazenda_nome'),
+            Variedade.nome.label('variedade_nome'),
+            ClassificacaoUva.classificacao.label('classificacao_nome')
         ).join(
             Fazenda, Atividade.fazenda_id == Fazenda.id
         ).join(
             Variedade, Atividade.variedade_id == Variedade.id
-        ).outerjoin(  # usando outerjoin pois nem toda atividade tem classificação
+        ).outerjoin(
             ClassificacaoUva, Atividade.classificacao_id == ClassificacaoUva.id
         ).filter(
             Atividade.produtor_id == produtor_id
         ).order_by(
             Atividade.created_at.desc()
-        ).limit(50).all()
+        ).limit(20).all()  # Reduz o limite para 20 registros
         
-        resultado = []
-        for a, f, v, c in atividades:
-            # Converter UTC para horário local (Brasil/São Paulo)
-            hora_local = a.created_at.astimezone(timezone('America/Sao_Paulo'))
-            
-            resultado.append({
-                'id': a.id,
-                'tipo_atividade': a.tipo_atividade,
-                'quantidade_pallets': a.quantidade_pallets,
-                'created_at': hora_local.strftime('%d/%m/%Y %H:%M'),
-                'fazenda': f.nome,
-                'area_parcela': f.area_parcela,
-                'variedade': v.nome,
-                'classificacao': c.classificacao if c else None
-            })
+        # Usa list comprehension para melhor performance
+        resultado = [{
+            'id': a.id,
+            'tipo_atividade': a.tipo_atividade,
+            'quantidade_pallets': a.quantidade_pallets,
+            'caixas': a.caixas,
+            'created_at': a.created_at.astimezone(timezone('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M'),
+            'fazenda': fazenda_nome,
+            'variedade': variedade_nome,
+            'classificacao': classificacao_nome
+        } for a, fazenda_nome, variedade_nome, classificacao_nome in atividades]
         
         return jsonify(resultado)
     except Exception as e:

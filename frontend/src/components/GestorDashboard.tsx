@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 interface Produtor {
   id: number;
@@ -75,6 +76,9 @@ const GestorDashboard: React.FC = () => {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
               Dashboard do Gestor
             </h1>
+              <Link to="/importacao-financeira" className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all mr-4">
+                Importar Dados
+              </Link>
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"

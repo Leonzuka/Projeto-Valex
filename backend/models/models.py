@@ -46,9 +46,10 @@ class Atividade(db.Model):
     produtor_id = db.Column(db.Integer, db.ForeignKey('produtor.id'), nullable=False)
     fazenda_id = db.Column(db.Integer, db.ForeignKey('fazenda.id'), nullable=False)
     variedade_id = db.Column(db.Integer, db.ForeignKey('variedade.id'), nullable=False)
-    classificacao_id = db.Column(db.Integer, db.ForeignKey('classificacao_uva.id'), nullable=True)  # Nova coluna
+    classificacao_id = db.Column(db.Integer, db.ForeignKey('classificacao_uva.id'), nullable=True)
     tipo_atividade = db.Column(db.String(20), nullable=False)
     quantidade_pallets = db.Column(db.Integer, nullable=False)
+    caixas = db.Column(db.Integer, nullable=True)  # Nova coluna
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -49,9 +49,9 @@ interface Atividade {
   quantidade_pallets: number;
   created_at: string;
   fazenda: string;
-  area_parcela: string;
   variedade: string;
   classificacao?: string;
+  caixas: number;
 }
 
 const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) => {
@@ -61,13 +61,56 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
   const [classificacoes, setClassificacoes] = useState<Classificacao[]>([]);
   const [selectedFazenda, setSelectedFazenda] = useState<string>('');
   const [selectedClassificacao, setSelectedClassificacao] = useState<string>('');
-  const [tipoAtividade, setTipoAtividade] = useState('');
+  const [tipoAtividade, setTipoAtividade] = useState('EMBALAGEM');
   const [quantidadePallets, setQuantidadePallets] = useState('');
   const [resumoDia, setResumoDia] = useState<ResumoDia>({
     total_pallets: 0,
     detalhamento: {}
   });
   const [historico, setHistorico] = useState<Atividade[]>([]);
+  const [variedadesFazenda, setVariedadesFazenda] = useState<{id: number, nome: string}[]>([]);
+  const [quantidadeCaixas, setQuantidadeCaixas] = useState('');
+  const [selectedVariedade, setSelectedVariedade] = useState('');
+  const [calculatedPallets, setCalculatedPallets] = useState<number>(0);
+
+  const fetchHistorico = async () => {
+    if (!produtor?.id) return;
+    try {
+        const response = await axios.get(
+            `${process.env.REACT_APP_API_URL}/atividades/historico/${produtor.id}`,
+            { timeout: 5000 } // Adiciona um timeout de 5 segundos
+        );
+        setHistorico(response.data);
+    } catch (error) {
+        console.error('Erro ao buscar histórico:', error);
+    }
+};
+
+// Atualiza o useEffect do histórico para ser mais eficiente
+useEffect(() => {
+    if (!produtor?.id) return;
+    
+    fetchHistorico();
+    
+    // Reduz o intervalo de atualização para 15 segundos
+    const interval = setInterval(fetchHistorico, 15000);
+    return () => clearInterval(interval);
+}, [produtor?.id]);
+
+  const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const caixas = e.target.value;
+    setQuantidadeCaixas(caixas); // Atualiza o estado das caixas
+    
+    // Calcula a quantidade de pallets (1 pallet = 10 caixas)
+    // Math.ceil arredonda para cima, garantindo que sempre teremos pallets suficientes
+    const numeroPallets = Math.ceil(parseInt(caixas) / 10 || 0);
+    setCalculatedPallets(numeroPallets); // Atualiza o estado dos pallets
+  };
+
+  const calculatePallets = (caixas: string) => {
+    const numeroCaixas = parseInt(caixas) || 0;
+    return Math.ceil(numeroCaixas / 10); // Arredonda para cima para garantir que todas as caixas tenham espaço
+  };
 
   const fetchResumoDia = useCallback(async () => {
     if (!produtor) return;
@@ -94,12 +137,9 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
   useEffect(() => {
     const fetchProdutorData = async () => {
       try {
-        // Buscar todos os produtores
         const response = await axios.get(`${process.env.REACT_APP_API_URL}/produtores`);
-        console.log('Resposta da API (produtores):', response.data);
         const produtores = response.data;
         
-        // Encontrar o produtor pelo nome
         const produtorEncontrado = produtores.find(
           (p: Produtor) => p.nome === cooperadoNome
         );
@@ -107,14 +147,20 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
         if (produtorEncontrado) {
           setProdutor(produtorEncontrado);
           
-          // Buscar fazendas do produtor
+          // Buscar fazendas do produtor e agrupar por nome
           const fazendasResponse = await axios.get(
             `${process.env.REACT_APP_API_URL}/fazendas/produtor/${produtorEncontrado.id}`
           );
-          console.log('Resposta da API (fazendas):', fazendasResponse.data);
-          setFazendas(fazendasResponse.data);
-        } else {
-          console.error('Produtor não encontrado:', cooperadoNome);
+          
+          // Agrupa fazendas por nome
+          const fazendasUnicas = fazendasResponse.data.reduce((acc: any[], curr: any) => {
+            if (!acc.find((f: any) => f.nome === curr.nome)) {
+              acc.push(curr);
+            }
+            return acc;
+          }, []);
+          
+          setFazendas(fazendasUnicas);
         }
       } catch (error) {
         console.error('Erro ao buscar dados do produtor:', error);
@@ -165,24 +211,46 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
     if (!fazenda) return;
 
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/atividades`, {
-        produtor_id: produtor.id,
-        fazenda_id: parseInt(selectedFazenda),
-        variedade_id: fazenda.variedade_id,
-        classificacao_id: parseInt(selectedClassificacao),
-        tipo_atividade: tipoAtividade,
-        quantidade_pallets: tipoAtividade === 'COLHEITA' ? 0 : parseInt(quantidadePallets)
-      });
+        // Calcula o número de caixas com base no tipo de atividade
+        const numeroCaixas = tipoAtividade === 'EMBALAGEM' ? parseInt(quantidadeCaixas) : 0;
 
-      alert('Atividade registrada com sucesso!');
-      setSelectedFazenda('');
-      setSelectedClassificacao('');
-      setTipoAtividade('');
-      setQuantidadePallets('');
-      fetchResumoDia();
+        await axios.post(`${process.env.REACT_APP_API_URL}/atividades`, {
+            produtor_id: produtor.id,
+            fazenda_id: parseInt(selectedFazenda),
+            variedade_id: fazenda.variedade_id,
+            classificacao_id: parseInt(selectedClassificacao),
+            tipo_atividade: tipoAtividade,
+            quantidade_pallets: calculatedPallets,
+            caixas: numeroCaixas // Adicionando o número de caixas
+        });
+
+        // Após registrar, atualiza imediatamente o histórico
+        fetchHistorico();
+        fetchResumoDia();
+
+        alert('Atividade registrada com sucesso!');
+        setSelectedFazenda('');
+        setSelectedClassificacao('');
+        setTipoAtividade('EMBALAGEM');
+        setQuantidadePallets('');
+        setQuantidadeCaixas('');
     } catch (error) {
-      console.error('Erro ao registrar atividade:', error);
-      alert('Erro ao registrar atividade');
+        console.error('Erro ao registrar atividade:', error);
+        alert('Erro ao registrar atividade');
+    }
+  };
+
+  const handleFazendaChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const fazendaId = e.target.value;
+    setSelectedFazenda(fazendaId);
+    
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_API_URL}/fazendas/${fazendaId}/variedades`
+      );
+      setVariedadesFazenda(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar variedades:', error);
     }
   };
 
@@ -241,7 +309,6 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
-                    <option value="">Selecione a Atividade</option>
                     <option value="COLHEITA">Colheita</option>
                     <option value="EMBALAGEM">Embalagem</option>
                     <option value="TRANSPORTE">Transporte</option>
@@ -254,66 +321,84 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
                   </label>
                   <select
                     value={selectedFazenda}
-                    onChange={(e) => setSelectedFazenda(e.target.value)}
+                    onChange={handleFazendaChange}
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
                     <option value="">Selecione a fazenda</option>
                     {fazendas.map((fazenda) => (
                       <option key={fazenda.id} value={fazenda.id}>
-                        {fazenda.nome} - {fazenda.area_parcela}
+                        {fazenda.nome}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Variedade
-                  </label>
-                  <input
-                    type="text"
-                    value={fazendas.find(f => f.id.toString() === selectedFazenda)?.variedade_nome || ''}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-gray-50"
-                    disabled
-                  />
-                </div>
-
-                {tipoAtividade === 'EMBALAGEM' && (
+                {selectedFazenda && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Classificação
+                      Variedade
                     </label>
                     <select
-                      value={selectedClassificacao}
-                      onChange={(e) => setSelectedClassificacao(e.target.value)}
+                      value={selectedVariedade}
+                      onChange={(e) => setSelectedVariedade(e.target.value)}
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       required
                     >
-                      <option value="">Selecione a classificação</option>
-                      {classificacoes.map((classificacao) => (
-                        <option key={classificacao.id} value={classificacao.id}>
-                          {classificacao.classificacao} - {classificacao.peso} - {classificacao.cumbuca}
+                      <option value="">Selecione a variedade</option>
+                      {variedadesFazenda.map((variedade) => (
+                        <option key={variedade.id} value={variedade.id}>
+                          {variedade.nome}
                         </option>
                       ))}
                     </select>
                   </div>
                 )}
 
-                {tipoAtividade !== 'COLHEITA' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Quantidade de Pallets
-                    </label>
-                    <input
-                      type="number"
-                      value={quantidadePallets}
-                      onChange={(e) => setQuantidadePallets(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      min="1"
-                      required
-                    />
-                  </div>
+                {tipoAtividade === 'EMBALAGEM' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Quantidade de Caixas
+                      </label>
+                      <input
+                        type="number"
+                        value={quantidadeCaixas}
+                        onChange={handleCaixasChange} // Aqui usamos a função que criamos
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        min="1"
+                        required
+                      />
+                      {/* Exibição da quantidade de pallets calculada */}
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-600">
+                          Quantidade de Pallets (calculado): 
+                          <span className="font-semibold text-blue-600">
+                            {calculatedPallets}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Classificação
+                      </label>
+                      <select
+                        value={selectedClassificacao}
+                        onChange={(e) => setSelectedClassificacao(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        required
+                      >
+                        <option value="">Selecione a classificação</option>
+                        {classificacoes.map((classificacao) => (
+                          <option key={classificacao.id} value={classificacao.id}>
+                            {classificacao.classificacao} - {classificacao.peso} - {classificacao.cumbuca}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
                 )}
 
                 <button
@@ -373,16 +458,16 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Atividade</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fazenda</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Área</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variedade</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classificação</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pallets</th>
-                  </tr>
-                </thead>
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Atividade</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fazenda</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variedade</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classificação</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Caixas</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pallets</th>
+                </tr>
+              </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {historico.map((atividade) => (
                     <tr key={atividade.id} className="hover:bg-gray-50">
@@ -399,10 +484,12 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.fazenda}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.area_parcela}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.variedade}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {atividade.tipo_atividade === 'EMBALAGEM' ? (atividade.classificacao || '-') : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {atividade.tipo_atividade === 'EMBALAGEM' ? atividade.caixas : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {atividade.tipo_atividade === 'COLHEITA' ? '-' : atividade.quantidade_pallets}
