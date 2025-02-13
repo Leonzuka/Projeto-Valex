@@ -53,8 +53,22 @@ function App() {
 
       <footer className="footer">
         <div className="footer-content">
-          <a href="#" className="footer-link">Contato</a>
-          <a href="#" className="footer-link">Documentação</a>
+          <a 
+            href="mailto:contato@valex.com.br" 
+            className="footer-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Contato
+          </a>
+          <a 
+            href="https://github.com/seu-repositorio/documentacao" 
+            className="footer-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Documentação
+          </a>
         </div>
       </footer>
 
