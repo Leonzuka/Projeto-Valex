@@ -1,12 +1,17 @@
-FROM node:18
+FROM node:18 
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install
+
+# Instala as dependências, incluindo 'serve'
+RUN npm install && npm install serve --global
 
 COPY . .
+
 RUN npm run build
 
 ENV PORT=3000
-CMD ["npx", "serve", "-s", "build", "-l", "3000"]
+
+# Usa o 'serve' instalado globalmente
+CMD ["serve", "-s", "build", "-l", "3000"]
