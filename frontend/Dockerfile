@@ -14,4 +14,4 @@ RUN npm run build
 ENV PORT=3000
 
 # Usa o 'serve' instalado globalmente
-CMD npx serve -s build -l $PORT
+CMD npx serve -s build -l 0.0.0.0:$PORT
