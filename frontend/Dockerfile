@@ -14,4 +14,4 @@ RUN npm run build
 ENV PORT=3000
 
 # Usa o 'serve' instalado globalmente
-CMD ["serve", "-s", "build", "-l", "3000"]
+CMD ["npx", "serve", "-s", "build", "-l", "$PORT"]
