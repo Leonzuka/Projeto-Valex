@@ -8,7 +8,6 @@
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@types/react-router-dom": "^5.3.3",
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.0",
     "axios": "^1.6.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -19,17 +18,12 @@
     "serve": "^14.2.0"  
   },
   "scripts": {
-    "update:npm": "npm install -g npm@latest",
-    "fund:details": "npm fund",
-    "audit:fix": "npm audit fix --force",
-    "preinstall": "npx npm-force-resolutions",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "predeploy": "npm run build",
-    "deploy": "npx serve -s build -l :$PORT",
-    "serve": "serve -s build -l :$PORT"
+    "serve": "serve -s build",
+    "deploy": "serve -s build"
   },
 
   "eslintConfig": {

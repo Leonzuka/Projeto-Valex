@@ -1,12 +1,9 @@
-# Arquivo: frontend/railway.toml
-
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "frontend/Dockerfile"
 
 [deploy]
-# Alterar a linha do startCommand para:
-startCommand = "npx serve -s build -l :$PORT"
+startCommand = "npm run serve"
 healthcheckPath = "/"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
@@ -14,4 +11,3 @@ restartPolicyType = "ON_FAILURE"
 [env]
 PORT = "3000"
 NODE_OPTIONS = "--max-old-space-size=512"
-REACT_APP_API_URL = "https://projeto-valex.railway.internal/api"

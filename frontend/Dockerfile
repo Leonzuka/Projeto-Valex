@@ -4,14 +4,12 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm install
+RUN npm install --production
 
 COPY . .
 
 RUN npm run build
 
-ENV PORT 3000
+EXPOSE $PORT
 
-# Corrija o comando serve para usar -l 0.0.0.0:$PORT
-CMD ["npx", "serve", "-s", "build", "-l", ":$PORT"]
-
+CMD ["npm", "run", "serve"]
