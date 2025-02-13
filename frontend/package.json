@@ -29,7 +29,7 @@
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
     "deploy": "npx serve -s build",
-    "serve": "serve -s build -l tcp://0.0.0.0:$PORT"
+    "serve": "serve -s build -l 0.0.0.0:$PORT"
   },
 
   "eslintConfig": {

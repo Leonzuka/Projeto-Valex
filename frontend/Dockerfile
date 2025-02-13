@@ -12,4 +12,5 @@ RUN npm run build
 
 ENV PORT=3000
 
-CMD ["npm", "run", "serve"]
+# Corrija o comando serve para usar -l 0.0.0.0:$PORT
+CMD ["npx", "serve", "-s", "build", "-l", "0.0.0.0:$PORT"]
