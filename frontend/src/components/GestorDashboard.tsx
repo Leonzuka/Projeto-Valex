@@ -47,33 +47,24 @@ const GestorDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [dadosFinanceiros, setDadosFinanceiros] = useState<DadosFinanceiros | null>(null);
   const [dadosFundos, setDadosFundos] = useState<DadosFundos | null>(null);
-  const [loadingEstatisticas, setLoadingEstatisticas] = useState(true);
-  const [loadingFinanceiro, setLoadingFinanceiro] = useState(true);
-  const [loadingResumos, setLoadingResumos] = useState(true);
 
   const fetchDados = async () => {
     try {
       // Estatísticas
-      setLoadingEstatisticas(true);
       const estatisticasResponse = await axios.get(`${process.env.REACT_APP_API_URL}/gestor/estatisticas`);
       setEstatisticas(estatisticasResponse.data);
-      setLoadingEstatisticas(false);
   
       // Dados Financeiros
-      setLoadingFinanceiro(true);
       const [financeirosResponse, fundosResponse] = await Promise.all([
         axios.get(`${process.env.REACT_APP_API_URL}/financeiro/resumo`),
         axios.get(`${process.env.REACT_APP_API_URL}/financeiro/fundos`)
       ]);
       setDadosFinanceiros(financeirosResponse.data);
       setDadosFundos(fundosResponse.data);
-      setLoadingFinanceiro(false);
   
       // Resumos
-      setLoadingResumos(true);
       const resumoResponse = await axios.get(`${process.env.REACT_APP_API_URL}/gestor/resumo-geral`);
       setResumos(resumoResponse.data);
-      setLoadingResumos(false);
   
       setIsLoading(false);
     } catch (err) {
