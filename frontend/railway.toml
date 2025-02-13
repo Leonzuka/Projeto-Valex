@@ -1,9 +1,12 @@
+# Arquivo: frontend/railway.toml
+
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "frontend/Dockerfile"
 
 [deploy]
-startCommand = "npx serve -s build -l 3.0.0.0:$PORT"
+# Alterar a linha do startCommand para:
+startCommand = "npx serve -s build -l :$PORT"
 healthcheckPath = "/"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"

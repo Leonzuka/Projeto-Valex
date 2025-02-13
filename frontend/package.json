@@ -28,8 +28,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "npx serve -s build -l 3.0.0.0:$PORT",
-    "serve": "serve -s build -l $PORT"
+    "deploy": "npx serve -s build -l :$PORT",
+    "serve": "serve -s build -l :$PORT"
   },
 
   "eslintConfig": {
