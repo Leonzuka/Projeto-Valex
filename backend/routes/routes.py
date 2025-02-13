@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from models.models import db, Produtor, Fazenda, Variedade, Atividade, ClassificacaoUva
-from datetime import datetime
+from datetime import datetime, timedelta
 from pytz import timezone
 
 # Criar Blueprint
@@ -149,32 +149,47 @@ def create_atividade():
     }), 201
 
 @api.route('/atividades/resumo/<int:produtor_id>', methods=['GET'])
-def get_resumo_dia(produtor_id):
+def get_resumo_semana(produtor_id):
     try:
+        # Calcula a data inicial (7 dias atrás) e final (hoje)
         hoje = datetime.utcnow().date()
+        data_inicial = hoje - timedelta(days=7)
         
-        # Buscar atividades do dia com informações relacionadas
+        # Buscar atividades da semana com informações relacionadas
         atividades = db.session.query(
             Atividade,
             Variedade.nome.label('variedade_nome'),
             ClassificacaoUva.classificacao.label('classificacao_nome')
         ).join(
             Variedade, Atividade.variedade_id == Variedade.id
-        ).outerjoin(  # usando outerjoin pois nem toda atividade tem classificação
+        ).outerjoin(
             ClassificacaoUva, Atividade.classificacao_id == ClassificacaoUva.id
         ).filter(
             Atividade.produtor_id == produtor_id,
-            db.func.date(Atividade.created_at) == hoje
+            db.func.date(Atividade.created_at) >= data_inicial,
+            db.func.date(Atividade.created_at) <= hoje
         ).all()
         
         # Agrupar por variedade e classificação
         resumo_detalhado = {}
+        resumo_diario = {}
         total_pallets = 0
         
         for atividade, var_nome, class_nome in atividades:
+            data = atividade.created_at.date()
             total_pallets += atividade.quantidade_pallets
             
-            # Agrupar por variedade
+            # Inicializar estrutura para o dia se não existir
+            if data not in resumo_diario:
+                resumo_diario[data] = {
+                    'total_pallets': 0,
+                    'detalhamento': {}
+                }
+            
+            # Atualizar totais diários
+            resumo_diario[data]['total_pallets'] += atividade.quantidade_pallets
+            
+            # Agrupar por variedade no resumo geral
             if var_nome not in resumo_detalhado:
                 resumo_detalhado[var_nome] = {
                     'total_pallets': 0,
@@ -184,18 +199,25 @@ def get_resumo_dia(produtor_id):
             resumo_detalhado[var_nome]['total_pallets'] += atividade.quantidade_pallets
             
             # Agrupar por classificação dentro da variedade
-            if class_nome:  # só agrupa se tiver classificação
+            if class_nome:
                 if class_nome not in resumo_detalhado[var_nome]['classificacoes']:
                     resumo_detalhado[var_nome]['classificacoes'][class_nome] = 0
                 resumo_detalhado[var_nome]['classificacoes'][class_nome] += atividade.quantidade_pallets
         
+        # Converter datas para string no formato brasileiro
+        resumo_diario_formatado = {
+            data.strftime('%d/%m/%Y'): dados 
+            for data, dados in resumo_diario.items()
+        }
+        
         return jsonify({
             'total_pallets': total_pallets,
-            'detalhamento': resumo_detalhado
+            'detalhamento': resumo_detalhado,
+            'resumo_diario': resumo_diario_formatado
         })
     except Exception as e:
-        print(f"Erro ao buscar resumo do dia: {str(e)}")
-        return jsonify({"error": "Erro ao buscar resumo do dia"}), 500
+        print(f"Erro ao buscar resumo da semana: {str(e)}")
+        return jsonify({"error": "Erro ao buscar resumo da semana"}), 500
 
 @api.route('/atividades/historico/<int:produtor_id>', methods=['GET'])
 def get_historico_atividades(produtor_id):

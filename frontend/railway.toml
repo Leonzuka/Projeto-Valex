@@ -3,9 +3,8 @@ builder = "DOCKERFILE"
 dockerfilePath = "frontend/Dockerfile"
 
 [deploy]
-startCommand = "npx serve -s build -l 3000"
-healthcheckPath = "/"
-healthcheckTimeout = 300
+startCommand = "npx serve -s build -l $PORT --single"
+healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 
 [env]

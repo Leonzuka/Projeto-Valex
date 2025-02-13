@@ -4,6 +4,8 @@ import pandas as pd
 from datetime import datetime
 from decimal import Decimal
 import numpy as np
+from models.models import db
+from sqlalchemy import func, case
 
 financeiro_api = Blueprint('financeiro_api', __name__)
 
@@ -89,3 +91,80 @@ def importar_balancete():
         db.session.rollback()
         print(f"Erro na importação: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@financeiro_api.route('/resumo', methods=['GET'])
+def get_resumo_financeiro():
+    try:
+        # Consulta para obter saldos atuais do balancete
+        balancete = db.session.query(
+            func.sum(BalanceteItem.valor_atual).label('total')
+        ).first()
+
+        # Cálculos financeiros básicos
+        ativos = db.session.query(
+            func.sum(BalanceteItem.valor_atual)
+        ).filter(
+            BalanceteItem.conta.like('1%')  # Contas que começam com 1 são ativos
+        ).scalar() or 0
+
+        passivos = db.session.query(
+            func.sum(BalanceteItem.valor_atual)
+        ).filter(
+            BalanceteItem.conta.like('2%')  # Contas que começam com 2 são passivos
+        ).scalar() or 0
+
+        patrimonio_liquido = ativos - abs(passivos)
+
+        # Saldo em caixa (contas do grupo 1.1.1)
+        saldo_caixa = db.session.query(
+            func.sum(BalanceteItem.valor_atual)
+        ).filter(
+            BalanceteItem.conta.like('1.1.1%')
+        ).scalar() or 0
+
+        return jsonify({
+            'saldo_caixa': float(saldo_caixa),
+            'total_ativos': float(ativos),
+            'total_passivos': float(abs(passivos)),
+            'patrimonio_liquido': float(patrimonio_liquido)
+        })
+
+    except Exception as e:
+        print(f"Erro ao buscar resumo financeiro: {str(e)}")
+        return jsonify({"error": "Erro ao buscar dados financeiros"}), 500
+
+@financeiro_api.route('/fundos', methods=['GET'])
+def get_fundos():
+    try:
+        # Cálculo do saldo do FATES
+        fates = db.session.query(
+            func.sum(
+                case(
+                    (FundoEspecial.tipo_movimento == 'ENTRADA', FundoEspecial.valor_movimento),
+                    else_=-FundoEspecial.valor_movimento
+                )
+            )
+        ).filter(
+            FundoEspecial.tipo_fundo == 'FATES'
+        ).scalar() or 0
+
+        # Cálculo do saldo do Fundo de Investimento
+        investimento = db.session.query(
+            func.sum(
+                case(
+                    (FundoEspecial.tipo_movimento == 'ENTRADA', FundoEspecial.valor_movimento),
+                    else_=-FundoEspecial.valor_movimento
+                )
+            )
+        ).filter(
+            FundoEspecial.tipo_fundo == 'INVESTIMENTO'
+        ).scalar() or 0
+
+        return jsonify({
+            'fates': float(fates),
+            'investimento': float(investimento)
+        })
+
+    except Exception as e:
+        print(f"Erro ao buscar dados dos fundos: {str(e)}")
+        return jsonify({"error": "Erro ao buscar dados dos fundos"}), 500

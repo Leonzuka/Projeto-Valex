@@ -1,14 +1,14 @@
-# requirements.txt
 Flask==3.0.2
 Flask-SQLAlchemy==3.1.1
 Flask-Cors==4.0.0
+Flask-Caching==2.1.0  # Novo
+Flask-Compress==1.14  # Novo
 python-dotenv==1.0.1
 PyMySQL==1.1.0
 gunicorn==21.2.0
 Werkzeug==3.0.1
 alembic==1.13.1
 mysqlclient
-python-dotenv==1.0.1
 pytz==2024.1
 pandas==2.1.4
 openpyxl==3.1.2

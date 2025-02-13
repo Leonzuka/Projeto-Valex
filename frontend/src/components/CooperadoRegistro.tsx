@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useCallback } from 'react';
 
+
 interface CooperadoRegistroProps {
   cooperadoNome: string;
 }
@@ -41,6 +42,20 @@ interface ResumoDia {
       };
     };
   };
+
+  resumo_diario: {
+    [data: string]: {
+      total_pallets: number;
+      detalhamento: {
+        [variedade: string]: {
+          total_pallets: number;
+          classificacoes: {
+            [classificacao: string]: number;
+          };
+        };
+      };
+    };
+  };
 }
 
 interface Atividade {
@@ -62,10 +77,10 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
   const [selectedFazenda, setSelectedFazenda] = useState<string>('');
   const [selectedClassificacao, setSelectedClassificacao] = useState<string>('');
   const [tipoAtividade, setTipoAtividade] = useState('EMBALAGEM');
-  const [quantidadePallets, setQuantidadePallets] = useState('');
   const [resumoDia, setResumoDia] = useState<ResumoDia>({
     total_pallets: 0,
-    detalhamento: {}
+    detalhamento: {},
+    resumo_diario: {} 
   });
   const [historico, setHistorico] = useState<Atividade[]>([]);
   const [variedadesFazenda, setVariedadesFazenda] = useState<{id: number, nome: string}[]>([]);
@@ -73,29 +88,28 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
   const [selectedVariedade, setSelectedVariedade] = useState('');
   const [calculatedPallets, setCalculatedPallets] = useState<number>(0);
 
-  const fetchHistorico = async () => {
+  const fetchHistorico = useCallback(async () => {
     if (!produtor?.id) return;
     try {
         const response = await axios.get(
             `${process.env.REACT_APP_API_URL}/atividades/historico/${produtor.id}`,
-            { timeout: 5000 } // Adiciona um timeout de 5 segundos
+            { timeout: 5000 }
         );
         setHistorico(response.data);
     } catch (error) {
         console.error('Erro ao buscar histórico:', error);
     }
-};
+}, [produtor?.id]);
 
 // Atualiza o useEffect do histórico para ser mais eficiente
 useEffect(() => {
-    if (!produtor?.id) return;
-    
-    fetchHistorico();
-    
-    // Reduz o intervalo de atualização para 15 segundos
-    const interval = setInterval(fetchHistorico, 15000);
-    return () => clearInterval(interval);
-}, [produtor?.id]);
+  if (!produtor?.id) return;
+  
+  fetchHistorico();
+  
+  const interval = setInterval(fetchHistorico, 15000);
+  return () => clearInterval(interval);
+}, [produtor?.id, fetchHistorico]);
 
   const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const caixas = e.target.value;
@@ -105,11 +119,6 @@ useEffect(() => {
     // Math.ceil arredonda para cima, garantindo que sempre teremos pallets suficientes
     const numeroPallets = Math.ceil(parseInt(caixas) / 10 || 0);
     setCalculatedPallets(numeroPallets); // Atualiza o estado dos pallets
-  };
-
-  const calculatePallets = (caixas: string) => {
-    const numeroCaixas = parseInt(caixas) || 0;
-    return Math.ceil(numeroCaixas / 10); // Arredonda para cima para garantir que todas as caixas tenham espaço
   };
 
   const fetchResumoDia = useCallback(async () => {
@@ -205,40 +214,39 @@ useEffect(() => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!produtor || !selectedFazenda) return;
-
-    const fazenda = fazendas.find(f => f.id.toString() === selectedFazenda);
-    if (!fazenda) return;
+    if (!produtor || !selectedFazenda || !selectedVariedade) {
+        alert('Por favor, preencha todos os campos obrigatórios');
+        return;
+    }
 
     try {
-        // Calcula o número de caixas com base no tipo de atividade
         const numeroCaixas = tipoAtividade === 'EMBALAGEM' ? parseInt(quantidadeCaixas) : 0;
-
-        await axios.post(`${process.env.REACT_APP_API_URL}/atividades`, {
+        const dadosAtividade = {
             produtor_id: produtor.id,
             fazenda_id: parseInt(selectedFazenda),
-            variedade_id: fazenda.variedade_id,
-            classificacao_id: parseInt(selectedClassificacao),
+            variedade_id: parseInt(selectedVariedade),
+            classificacao_id: tipoAtividade === 'EMBALAGEM' ? parseInt(selectedClassificacao) : null,
             tipo_atividade: tipoAtividade,
-            quantidade_pallets: calculatedPallets,
-            caixas: numeroCaixas // Adicionando o número de caixas
-        });
+            quantidade_pallets: tipoAtividade === 'COLHEITA' ? 0 : calculatedPallets,
+            caixas: numeroCaixas
+        };
 
-        // Após registrar, atualiza imediatamente o histórico
+        await axios.post(`${process.env.REACT_APP_API_URL}/atividades`, dadosAtividade);
+
         fetchHistorico();
         fetchResumoDia();
 
         alert('Atividade registrada com sucesso!');
         setSelectedFazenda('');
+        setSelectedVariedade('');
         setSelectedClassificacao('');
         setTipoAtividade('EMBALAGEM');
-        setQuantidadePallets('');
         setQuantidadeCaixas('');
     } catch (error) {
         console.error('Erro ao registrar atividade:', error);
         alert('Erro ao registrar atividade');
     }
-  };
+};
 
   const handleFazendaChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const fazendaId = e.target.value;
@@ -334,28 +342,26 @@ useEffect(() => {
                   </select>
                 </div>
 
-                {selectedFazenda && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Variedade
-                    </label>
-                    <select
-                      value={selectedVariedade}
-                      onChange={(e) => setSelectedVariedade(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    >
-                      <option value="">Selecione a variedade</option>
-                      {variedadesFazenda.map((variedade) => (
-                        <option key={variedade.id} value={variedade.id}>
-                          {variedade.nome}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Variedade
+                  </label>
+                  <select
+                    value={selectedVariedade}
+                    onChange={(e) => setSelectedVariedade(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  >
+                    <option value="">Selecione a variedade</option>
+                    {variedadesFazenda.map((variedade) => (
+                      <option key={variedade.id} value={variedade.id}>
+                        {variedade.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                {tipoAtividade === 'EMBALAGEM' && (
+                {tipoAtividade !== 'COLHEITA' && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -364,12 +370,11 @@ useEffect(() => {
                       <input
                         type="number"
                         value={quantidadeCaixas}
-                        onChange={handleCaixasChange} // Aqui usamos a função que criamos
+                        onChange={handleCaixasChange}
                         className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         min="1"
-                        required
+                        required={tipoAtividade === 'EMBALAGEM'}
                       />
-                      {/* Exibição da quantidade de pallets calculada */}
                       <div className="mt-2">
                         <p className="text-sm text-gray-600">
                           Quantidade de Pallets (calculado): 
@@ -380,24 +385,26 @@ useEffect(() => {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Classificação
-                      </label>
-                      <select
-                        value={selectedClassificacao}
-                        onChange={(e) => setSelectedClassificacao(e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        required
-                      >
-                        <option value="">Selecione a classificação</option>
-                        {classificacoes.map((classificacao) => (
-                          <option key={classificacao.id} value={classificacao.id}>
-                            {classificacao.classificacao} - {classificacao.peso} - {classificacao.cumbuca}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {tipoAtividade === 'EMBALAGEM' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Classificação
+                        </label>
+                        <select
+                          value={selectedClassificacao}
+                          onChange={(e) => setSelectedClassificacao(e.target.value)}
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required={tipoAtividade === 'EMBALAGEM'}
+                        >
+                          <option value="">Selecione a classificação</option>
+                          {classificacoes.map((classificacao) => (
+                            <option key={classificacao.id} value={classificacao.id}>
+                              {classificacao.classificacao} - {classificacao.peso} - {classificacao.cumbuca}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -418,14 +425,54 @@ useEffect(() => {
                 <svg className="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                Resumo do Dia
+                Resumo da Semana
               </h3>
 
-                <div className="p-4 bg-green-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Total de Pallets</p>
-                  <p className="text-2xl font-bold text-green-600">{resumoDia.total_pallets}</p>
-                </div>
+              <div className="p-4 bg-blue-50 rounded-lg mb-4">
+                <p className="text-sm text-gray-600">Total de Pallets (7 dias)</p>
+                <p className="text-2xl font-bold text-blue-600">{resumoDia.total_pallets}</p>
+              </div>
 
+              {/* Resumo Diário */}
+              <div className="space-y-4 mt-6">
+                <h4 className="font-semibold text-gray-700 pb-2 border-b">Resumo por Dia</h4>
+                <div className="grid gap-3">
+                  {Object.entries(resumoDia.resumo_diario || {}).map(([data, dados]) => (
+                    <div 
+                      key={data} 
+                      className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 transition-all hover:shadow-md"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">{data}</p>
+                          <div className="mt-1">
+                            {Object.entries(dados.detalhamento || {}).map(([variedade, dadosVariedade]) => (
+                              <div key={variedade} className="text-xs text-gray-600 mt-1">
+                                {variedade}: {dadosVariedade.total_pallets} pallets
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-blue-600">
+                            {dados.total_pallets}
+                          </p>
+                          <p className="text-xs text-gray-500">pallets</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {Object.keys(resumoDia.resumo_diario || {}).length === 0 && (
+                    <div className="text-center py-4 text-gray-500 italic">
+                      Nenhuma atividade registrada esta semana.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Resumo por Variedade */}
+              <div className="mt-6 space-y-4">
+                <h4 className="font-semibold text-gray-700">Resumo por Variedade</h4>
                 {resumoDia.detalhamento && Object.entries(resumoDia.detalhamento).map(([variedade, dados]) => (
                   <div key={variedade} className="p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm font-medium text-gray-700">{variedade}</p>
@@ -445,6 +492,8 @@ useEffect(() => {
               </div>
             </div>
           </div>
+        </div>
+      
 
         {/* Histórico de Atividades */}
         <div className="mt-8">
