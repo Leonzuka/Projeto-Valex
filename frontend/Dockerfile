@@ -1,15 +1,15 @@
+# Arquivo: frontend/Dockerfile
 FROM node:18 
 
 WORKDIR /app
 
 COPY package.json package-lock.json ./
 
-RUN npm install --production
+RUN npm install --include=dev
 
 COPY . .
 
 RUN npm run build
-RUN npm install --include=dev
 
 EXPOSE $PORT
 
