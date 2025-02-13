@@ -3,10 +3,12 @@ builder = "DOCKERFILE"
 dockerfilePath = "frontend/Dockerfile"
 
 [deploy]
-startCommand = "npx serve -s build -l $PORT --single"
+startCommand = "npx serve build -l $PORT"
+healthcheckPath = "/"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 
 [env]
+PORT = "3000"
 NODE_OPTIONS = "--max-old-space-size=512"
 REACT_APP_API_URL = "https://projeto-valex.railway.internal/api"
