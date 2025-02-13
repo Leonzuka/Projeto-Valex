@@ -20,6 +20,10 @@
     
   },
   "scripts": {
+    "update:npm": "npm install -g npm@latest",
+    "fund:details": "npm fund",
+    "audit:fix": "npm audit fix --force",
+    "preinstall": "npx npm-force-resolutions",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -44,6 +48,11 @@
       "last 1 safari version"
     ]
   },
+
+  "resolutions": {
+    "**/@babel/preset-env": "^7.22.10"
+  },
+  
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
     "@types/jest": "^29.5.14",
@@ -56,4 +65,5 @@
     "typescript": "^4.9.5"
   },
   "homepage": "."
+  
 }
