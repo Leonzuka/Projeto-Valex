@@ -1,5 +1,4 @@
 # middleware.py
-
 from flask import request  # Adicione esta linha no topo do arquivo
 import os
 
