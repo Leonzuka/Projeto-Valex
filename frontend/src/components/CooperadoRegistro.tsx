@@ -111,15 +111,36 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, [produtor?.id, fetchHistorico]);
 
-  const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const caixas = e.target.value;
-    setQuantidadeCaixas(caixas); // Atualiza o estado das caixas
-    
-    // Calcula a quantidade de pallets (1 pallet = 10 caixas)
-    // Math.ceil arredonda para cima, garantindo que sempre teremos pallets suficientes
-    const numeroPallets = Math.ceil(parseInt(caixas) / 10 || 0);
-    setCalculatedPallets(numeroPallets); // Atualiza o estado dos pallets
-  };
+const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const caixas = e.target.value;
+  setQuantidadeCaixas(caixas);
+  
+  // Busca a classificação selecionada
+  const classificacaoSelecionada = classificacoes.find(
+    c => c.id.toString() === selectedClassificacao
+  );
+  
+  if (!classificacaoSelecionada) {
+    setCalculatedPallets(0);
+    return;
+  }
+
+  // Define o número de caixas por pallet baseado na classificação
+  let caixasPorPallet = 110; // valor padrão para todas as classificações
+
+  // APENAS se for VALEX - 8KG - SACOLA usa 90
+  if (classificacaoSelecionada.classificacao === 'VALEX - 8KG - SACOLA') {
+    caixasPorPallet = 90;
+  }
+  
+  // Converte caixas para número e garante que seja pelo menos 0
+  const numeroCaixas = Math.max(0, parseInt(caixas || '0'));
+  
+  // Calcula a quantidade de pallets usando divisão e arredondamento para cima
+  const numeroPallets = Math.ceil(numeroCaixas / caixasPorPallet);
+  
+  setCalculatedPallets(numeroPallets);
+};
 
   const fetchResumoDia = useCallback(async () => {
     if (!produtor) return;
@@ -392,17 +413,29 @@ useEffect(() => {
                         </label>
                         <select
                           value={selectedClassificacao}
-                          onChange={(e) => setSelectedClassificacao(e.target.value)}
+                          onChange={(e) => {
+                            setSelectedClassificacao(e.target.value);
+                            // Recalcula os pallets quando a classificação mudar
+                            if (quantidadeCaixas) {
+                                const novaClassificacao = classificacoes.find(
+                                    c => c.id.toString() === e.target.value
+                                );
+                                // APENAS VALEX - 8KG - SACOLA usa 90, todas as outras usam 110
+                                const caixasPorPallet = novaClassificacao?.classificacao === 'VALEX - 8KG - SACOLA' ? 90 : 110;
+                                const numeroPallets = Math.ceil(parseInt(quantidadeCaixas) / caixasPorPallet);
+                                setCalculatedPallets(numeroPallets);
+                            }
+                        }}
                           className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           required={tipoAtividade === 'EMBALAGEM'}
-                        >
+                      >
                           <option value="">Selecione a classificação</option>
                           {classificacoes.map((classificacao) => (
-                            <option key={classificacao.id} value={classificacao.id}>
-                              {classificacao.classificacao} - {classificacao.peso} - {classificacao.cumbuca}
-                            </option>
+                              <option key={classificacao.id} value={classificacao.id}>
+                                  {classificacao.classificacao} - {classificacao.peso} - {classificacao.cumbuca}
+                              </option>
                           ))}
-                        </select>
+                      </select>
                       </div>
                     )}
                   </>
