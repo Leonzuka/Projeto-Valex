@@ -1,20 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
 import DashboardCard from './DashboardCard';
-
-interface DadosFinanceiros {
-  saldo_caixa: number;
-  total_ativos: number;
-  total_passivos: number;
-  patrimonio_liquido: number;
-}
-
-interface DadosFundos {
-  fates: number;
-  investimento: number;
-}
+import { useNavigate } from 'react-router-dom';
 
 interface ResumoDia {
   produtor_id: number;
@@ -40,28 +27,22 @@ interface Estatisticas {
 }
 
 const GestorDashboard: React.FC = () => {
-  const navigate = useNavigate();
   const [resumos, setResumos] = useState<ResumoDia[]>([]);
   const [estatisticas, setEstatisticas] = useState<Estatisticas | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dadosFinanceiros, setDadosFinanceiros] = useState<DadosFinanceiros | null>(null);
-  const [dadosFundos, setDadosFundos] = useState<DadosFundos | null>(null);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate('/');
+  };
 
   const fetchDados = async () => {
     try {
       // Estatísticas
       const estatisticasResponse = await axios.get(`${process.env.REACT_APP_API_URL}/gestor/estatisticas`);
       setEstatisticas(estatisticasResponse.data);
-  
-      // Dados Financeiros
-      const [financeirosResponse, fundosResponse] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_API_URL}/financeiro/resumo`),
-        axios.get(`${process.env.REACT_APP_API_URL}/financeiro/fundos`)
-      ]);
-      setDadosFinanceiros(financeirosResponse.data);
-      setDadosFundos(fundosResponse.data);
-  
+
       // Resumos
       const resumoResponse = await axios.get(`${process.env.REACT_APP_API_URL}/gestor/resumo-geral`);
       setResumos(resumoResponse.data);
@@ -79,10 +60,6 @@ const GestorDashboard: React.FC = () => {
     const interval = setInterval(fetchDados, 60000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleLogout = () => {
-    navigate('/');
-  };
 
   if (isLoading) {
     return (
@@ -116,12 +93,30 @@ const GestorDashboard: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <Link 
-                to="/importacao-financeira"
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all"
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                onClick={() => {}}
               >
-                Importar Dados Financeiros
-              </Link>
+                Financeiro
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                onClick={() => {}}
+              >
+                Fiscal
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                onClick={() => {}}
+              >
+                Contabilidade
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                onClick={() => {}}
+              >
+                Relatórios
+              </button>
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
@@ -172,74 +167,6 @@ const GestorDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Cards Financeiros */}
-        <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Informações Financeiras</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {dadosFinanceiros && (
-                <>
-                  <DashboardCard title="Saldo em Caixa" className="cursor-pointer hover:shadow-lg">
-                    <div className="text-2xl font-bold text-green-600">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-                        .format(dadosFinanceiros.saldo_caixa)}
-                    </div>
-                  </DashboardCard>
-
-                  <DashboardCard title="Total de Ativos" className="cursor-pointer hover:shadow-lg">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-                        .format(dadosFinanceiros.total_ativos)}
-                    </div>
-                  </DashboardCard>
-
-                  <DashboardCard title="Total de Passivos" className="cursor-pointer hover:shadow-lg">
-                    <div className="text-2xl font-bold text-red-600">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-                        .format(dadosFinanceiros.total_passivos)}
-                    </div>
-                  </DashboardCard>
-
-                  <DashboardCard title="Patrimônio Líquido" className="cursor-pointer hover:shadow-lg">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-                        .format(dadosFinanceiros.patrimonio_liquido)}
-                    </div>
-                  </DashboardCard>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Cards de Fundos */}
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Fundos Especiais</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {dadosFundos && (
-                <>
-                  <DashboardCard title="FATES" className="cursor-pointer hover:shadow-lg">
-                    <div className="text-2xl font-bold text-indigo-600">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-                        .format(dadosFundos.fates)}
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Fundo de Assistência Técnica, Educacional e Social
-                    </p>
-                  </DashboardCard>
-
-                  <DashboardCard title="Fundo de Investimento" className="cursor-pointer hover:shadow-lg">
-                    <div className="text-2xl font-bold text-teal-600">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-                        .format(dadosFundos.investimento)}
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Fundo para Investimentos e Melhorias
-                    </p>
-                  </DashboardCard>
-                </>
-              )}
-            </div>
-          </div>
-
         {/* Lista de Produtores */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {resumos.map((resumo) => (
@@ -266,18 +193,64 @@ const GestorDashboard: React.FC = () => {
                     </p>
 
                     {/* Classificações */}
-                    {Object.entries(dados.classificacoes).length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        <p className="text-xs font-medium text-gray-500">Classificações:</p>
-                        {Object.entries(dados.classificacoes).map(([classificacao, quantidade]) => (
-                          <div key={classificacao} className="flex justify-between items-center text-sm">
-                            <span className="text-gray-600">{classificacao}</span>
-                            <span className="font-medium">{quantidade} pallets</span>
-                          </div>
-                        ))}
+                    {Object.entries(dados.classificacoes).map(([classificacao, quantidade]) => {
+                      let displayText = '';
+                      let bgColor = '';
+                      let textColor = '';
+
+                      // Converte a string da classificação para número
+                      const classificacaoId = parseInt(classificacao);
+
+                      switch (classificacaoId) {
+                        case 1: // VALEX
+                          displayText = '📦 VALEX';
+                          bgColor = 'bg-blue-100';
+                          textColor = 'text-blue-700';
+                          break;
+                        case 2: // VITACE
+                          displayText = '📦 VITACE';
+                          bgColor = 'bg-green-100';
+                          textColor = 'text-green-700';
+                          break;
+                        case 3: // LINA
+                          displayText = '📦 LINA';
+                          bgColor = 'bg-purple-100';
+                          textColor = 'text-purple-700';
+                          break;
+                        case 4: // EXTRA
+                          displayText = '📦 EXTRA';
+                          bgColor = 'bg-yellow-100';
+                          textColor = 'text-yellow-700';
+                          break;
+                        case 5: // LININHA
+                          displayText = '📦 LININHA';
+                          bgColor = 'bg-pink-100';
+                          textColor = 'text-pink-700';
+                          break;
+                        case 6: // VALEX SACOLA
+                          displayText = '🛍️ VALEX SACOLA';
+                          bgColor = 'bg-red-100';
+                          textColor = 'text-red-700';
+                          break;
+                        default:
+                          displayText = `Classificação ${classificacao}`;
+                          bgColor = 'bg-gray-100';
+                          textColor = 'text-gray-600';
+                      }
+
+                      return (
+                        <div 
+                          key={classificacao} 
+                          className={`flex justify-between items-center text-sm p-1 rounded mt-1 ${bgColor}`}
+                        >
+                          <span className={`${textColor} font-medium`}>
+                            {displayText}
+                          </span>
+                          <span className="font-medium">{quantidade} pallets</span>
+                        </div>
+                      );
+                    })}
                       </div>
-                    )}
-                  </div>
                 ))}
 
                 {Object.keys(resumo.detalhamento).length === 0 && (

@@ -125,20 +125,38 @@ const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     return;
   }
 
-  // Define o número de caixas por pallet baseado na classificação
-  let caixasPorPallet = 110; // valor padrão para todas as classificações
+  console.log('Classificação completa:', classificacaoSelecionada);
+  console.log('Todas as propriedades:', {
+    id: classificacaoSelecionada.id,
+    classificacao: classificacaoSelecionada.classificacao,
+    caixa: classificacaoSelecionada.caixa,
+    peso: classificacaoSelecionada.peso
+  });
 
-  // APENAS se for VALEX - 8KG - SACOLA usa 90
-  if (classificacaoSelecionada.classificacao === 'VALEX - 8KG - SACOLA') {
+  // Converte caixas para número
+  const numeroCaixas = parseInt(caixas || '0');
+  
+  if (numeroCaixas <= 0) {
+    setCalculatedPallets(0);
+    return;
+  }
+
+  // Define o número de caixas por pallet baseado na classificação e peso
+  let caixasPorPallet = 110; // valor padrão
+
+  // Verifica se é Valex e tem peso de 8KG
+  if (classificacaoSelecionada.classificacao.includes('VALEX') && 
+      classificacaoSelecionada.peso === '8KG') {
     caixasPorPallet = 90;
+    console.log('Detectada classificação Valex 8KG');
   }
   
-  // Converte caixas para número e garante que seja pelo menos 0
-  const numeroCaixas = Math.max(0, parseInt(caixas || '0'));
-  
-  // Calcula a quantidade de pallets usando divisão e arredondamento para cima
   const numeroPallets = Math.ceil(numeroCaixas / caixasPorPallet);
   
+  console.log('Caixas:', numeroCaixas);
+  console.log('Caixas por Pallet:', caixasPorPallet);
+  console.log('Número de Pallets:', numeroPallets);
+
   setCalculatedPallets(numeroPallets);
 };
 
@@ -384,6 +402,48 @@ const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
                 {tipoAtividade !== 'COLHEITA' && (
                   <>
+                    {tipoAtividade === 'EMBALAGEM' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Classificação
+                        </label>
+                        <select
+                          value={selectedClassificacao}
+                          onChange={(e) => {
+                            setSelectedClassificacao(e.target.value);
+                            // Recalcula os pallets se já houver quantidade de caixas informada
+                            if (quantidadeCaixas) {
+                              const novaClassificacao = classificacoes.find(
+                                c => c.id.toString() === e.target.value
+                              );
+                              
+                              // Define o número de caixas por pallet baseado na classificação
+                              let caixasPorPallet = 110; // valor padrão
+                              
+                              if (novaClassificacao?.classificacao.includes('VALEX') && 
+                                  novaClassificacao?.peso === '8KG') {
+                                caixasPorPallet = 90;
+                              }
+                              
+                              const numeroCaixas = parseInt(quantidadeCaixas);
+                              const numeroPallets = Math.ceil(numeroCaixas / caixasPorPallet);
+                              
+                              setCalculatedPallets(numeroPallets);
+                            }
+                          }}
+                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          required={tipoAtividade === 'EMBALAGEM'}
+                        >
+                          <option value="">Selecione a classificação</option>
+                          {classificacoes.map((classificacao) => (
+                            <option key={classificacao.id} value={classificacao.id}>
+                              {classificacao.classificacao} - {classificacao.peso} - {classificacao.cumbuca}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Quantidade de Caixas
@@ -405,39 +465,6 @@ const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                         </p>
                       </div>
                     </div>
-
-                    {tipoAtividade === 'EMBALAGEM' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Classificação
-                        </label>
-                        <select
-                          value={selectedClassificacao}
-                          onChange={(e) => {
-                            setSelectedClassificacao(e.target.value);
-                            // Recalcula os pallets quando a classificação mudar
-                            if (quantidadeCaixas) {
-                                const novaClassificacao = classificacoes.find(
-                                    c => c.id.toString() === e.target.value
-                                );
-                                // APENAS VALEX - 8KG - SACOLA usa 90, todas as outras usam 110
-                                const caixasPorPallet = novaClassificacao?.classificacao === 'VALEX - 8KG - SACOLA' ? 90 : 110;
-                                const numeroPallets = Math.ceil(parseInt(quantidadeCaixas) / caixasPorPallet);
-                                setCalculatedPallets(numeroPallets);
-                            }
-                        }}
-                          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          required={tipoAtividade === 'EMBALAGEM'}
-                      >
-                          <option value="">Selecione a classificação</option>
-                          {classificacoes.map((classificacao) => (
-                              <option key={classificacao.id} value={classificacao.id}>
-                                  {classificacao.classificacao} - {classificacao.peso} - {classificacao.cumbuca}
-                              </option>
-                          ))}
-                      </select>
-                      </div>
-                    )}
                   </>
                 )}
 
@@ -568,7 +595,11 @@ const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.fazenda}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.variedade}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {atividade.tipo_atividade === 'EMBALAGEM' ? (atividade.classificacao || '-') : '-'}
+                        {atividade.tipo_atividade === 'EMBALAGEM' ? 
+                          (atividade.classificacao?.includes('ISOPOR') 
+                            ? 'VALEX SACOLA' 
+                            : 'VALEX') 
+                          : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {atividade.tipo_atividade === 'EMBALAGEM' ? atividade.caixas : '-'}

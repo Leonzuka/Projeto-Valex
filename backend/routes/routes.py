@@ -227,7 +227,8 @@ def get_historico_atividades(produtor_id):
             Atividade,
             Fazenda.nome.label('fazenda_nome'),
             Variedade.nome.label('variedade_nome'),
-            ClassificacaoUva.classificacao.label('classificacao_nome')
+            ClassificacaoUva.classificacao.label('classificacao_nome'),
+            ClassificacaoUva.caixa.label('classificacao_caixa') 
         ).join(
             Fazenda, Atividade.fazenda_id == Fazenda.id
         ).join(
@@ -249,8 +250,8 @@ def get_historico_atividades(produtor_id):
             'created_at': a.created_at.astimezone(timezone('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M'),
             'fazenda': fazenda_nome,
             'variedade': variedade_nome,
-            'classificacao': classificacao_nome
-        } for a, fazenda_nome, variedade_nome, classificacao_nome in atividades]
+            'classificacao': f"{classificacao_nome} - {classificacao_caixa}" if classificacao_nome else None
+        } for a, fazenda_nome, variedade_nome, classificacao_nome, classificacao_caixa in atividades]
         
         return jsonify(resultado)
     except Exception as e:

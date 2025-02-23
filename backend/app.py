@@ -2,7 +2,6 @@ from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from models.models import db
 from routes.routes import api
-from routes.financeiro_routes import financeiro_api
 from dotenv import load_dotenv
 from middleware import setup_cors_middleware
 import os
@@ -49,7 +48,6 @@ def create_app():
     
     # Registrar blueprint para API
     app.register_blueprint(api, url_prefix='/api')
-    app.register_blueprint(financeiro_api, url_prefix='/api/financeiro')
     
     @app.route('/')
     def home():
