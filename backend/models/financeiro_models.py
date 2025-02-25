@@ -6,20 +6,28 @@ class PlanoContas(db.Model):
     __tablename__ = 'plano_contas'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    codigo = db.Column(db.String(20), nullable=False, unique=True)
-    codigo_reduzido = db.Column(db.String(10))
+    sequencial = db.Column(db.String(20))  # Adicionando campo sequencial
+    codigo = db.Column(db.String(20), nullable=False)
+    codigo_reduzido = db.Column(db.String(20))  # Aumentando tamanho
     descricao = db.Column(db.String(200), nullable=False)
     nivel = db.Column(db.Integer)
-    conta_pai_id = db.Column(db.Integer, db.ForeignKey('plano_contas.id'))
+    conta_pai_id = db.Column(db.Integer, db.ForeignKey('plano_contas.id'), nullable=True)
     tipo_conta = db.Column(Enum('ATIVO', 'PASSIVO', 'RECEITA', 'DESPESA', 'PATRIMONIO_LIQUIDO'))
     natureza_saldo = db.Column(Enum('DEVEDOR', 'CREDOR'))
     permite_lancamento = db.Column(Boolean, default=True)
+    tipo = db.Column(db.String(5))  # Campo para o tipo (S ou A)
+    referencia = db.Column(db.String(50))  # Campo para referência
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relacionamento próprio para hierarquia
     conta_pai = db.relationship('PlanoContas', remote_side=[id], backref='contas_filhas')
-
+    
+    # Adicionando índice para o código para melhorar performance
+    __table_args__ = (
+        db.Index('idx_plano_contas_codigo', 'codigo'),
+    )
+    
 class BalanceteItem(db.Model):
     __tablename__ = 'balancete_items'
     

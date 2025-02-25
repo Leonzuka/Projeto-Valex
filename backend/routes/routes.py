@@ -2,6 +2,10 @@ from flask import Blueprint, request, jsonify, current_app
 from models.models import db, Produtor, Fazenda, Variedade, Atividade, ClassificacaoUva
 from datetime import datetime, timedelta
 from pytz import timezone
+from io import StringIO
+import csv
+import pandas as pd
+from models.financeiro_models import PlanoContas
 
 # Criar Blueprint
 api = Blueprint('api', __name__)
@@ -372,3 +376,253 @@ def get_estatisticas():
     except Exception as e:
         print(f"Erro ao buscar estatísticas: {str(e)}")
         return jsonify({"error": "Erro ao buscar estatísticas"}), 500
+    
+@api.route('/contabilidade/importar-plano', methods=['POST'])
+def importar_plano_contas():
+    if 'arquivo' not in request.files:
+        return jsonify({"error": "Nenhum arquivo enviado"}), 400
+        
+    arquivo = request.files['arquivo']
+    
+    if arquivo.filename == '':
+        return jsonify({"error": "Nome de arquivo vazio"}), 400
+        
+    # Verificar informações do arquivo para debug
+    current_app.logger.info(f"Nome do arquivo: {arquivo.filename}")
+    current_app.logger.info(f"Tipo MIME: {arquivo.content_type}")
+    
+    try:
+        # Ler o conteúdo do arquivo
+        arquivo.stream.seek(0)
+        
+        # Tentar diferentes codificações
+        try:
+            conteudo = arquivo.read().decode('utf-8')
+        except UnicodeDecodeError:
+            arquivo.stream.seek(0)
+            try:
+                conteudo = arquivo.read().decode('iso-8859-1')
+            except UnicodeDecodeError:
+                arquivo.stream.seek(0)
+                conteudo = arquivo.read().decode('latin-1')
+                
+        # Detectar o delimitador
+        sniffer = csv.Sniffer()
+        dialect = sniffer.sniff(conteudo[:1024])
+        delimiter = dialect.delimiter
+        
+        # Se não conseguir detectar, tentar delimitadores comuns
+        if not delimiter or delimiter.isalnum():
+            if ';' in conteudo[:1024]:
+                delimiter = ';'
+            elif ',' in conteudo[:1024]:
+                delimiter = ','
+            elif '\t' in conteudo[:1024]:
+                delimiter = '\t'
+            else:
+                delimiter = ';'  # Padrão
+                
+        current_app.logger.info(f"Delimitador detectado: '{delimiter}'")
+        
+        # Ler CSV com pandas
+        df = pd.read_csv(StringIO(conteudo), 
+                         sep=delimiter, 
+                         encoding='utf-8',
+                         dtype=str,  # Trata todas as colunas como strings
+                         on_bad_lines='skip',
+                         engine='python',  # Motor mais flexível
+                         skipinitialspace=True,  # Ignora espaços iniciais
+                         keep_default_na=False)  # Evita que pandas converta valores vazios em NaN
+        
+        # Verificar e registrar estrutura do CSV
+        current_app.logger.info(f"Colunas detectadas: {list(df.columns)}")
+        current_app.logger.info(f"Primeiras linhas: {df.head(3).to_dict()}")
+
+        # Identificar colunas
+        colunas_esperadas = ['sequencial', 'codigo', 'tipo', 'descricao', 'referencia']
+        mapeamento_colunas = {}
+        
+        # Verificar cada coluna esperada e encontrar correspondência
+        for coluna in colunas_esperadas:
+            # Verificar se existe exatamente
+            if coluna in df.columns:
+                mapeamento_colunas[coluna] = coluna
+                continue
+                
+            # Tentar alternativas para cada coluna
+            if coluna == 'sequencial' and any(c in df.columns for c in ['seq', 'id', 'num']):
+                for alt in ['seq', 'id', 'num']:
+                    if alt in df.columns:
+                        mapeamento_colunas[coluna] = alt
+                        break
+            elif coluna == 'codigo' and any(c in df.columns for c in ['cod', 'código', 'conta']):
+                for alt in ['cod', 'código', 'conta']:
+                    if alt in df.columns:
+                        mapeamento_colunas[coluna] = alt
+                        break
+            elif coluna == 'tipo' and any(c in df.columns for c in ['t', 'tp', 'sintética']):
+                for alt in ['t', 'tp', 'sintética']:
+                    if alt in df.columns:
+                        mapeamento_colunas[coluna] = alt
+                        break
+            elif coluna == 'descricao' and any(c in df.columns for c in ['desc', 'descrição', 'nome']):
+                for alt in ['desc', 'descrição', 'nome']:
+                    if alt in df.columns:
+                        mapeamento_colunas[coluna] = alt
+                        break
+            elif coluna == 'referencia' and any(c in df.columns for c in ['ref', 'referência', 'reduzido']):
+                for alt in ['ref', 'referência', 'reduzido']:
+                    if alt in df.columns:
+                        mapeamento_colunas[coluna] = alt
+                        break
+            
+            # Se ainda não encontrou, usar a posição (índice numérico das colunas)
+            if coluna not in mapeamento_colunas and len(df.columns) >= colunas_esperadas.index(coluna) + 1:
+                mapeamento_colunas[coluna] = df.columns[colunas_esperadas.index(coluna)]
+        
+        current_app.logger.info(f"Mapeamento de colunas: {mapeamento_colunas}")
+        
+        # Se não conseguiu mapear todas as colunas, tentar inferir pela posição
+        if len(mapeamento_colunas) < len(colunas_esperadas):
+            current_app.logger.warning("Algumas colunas não foram mapeadas. Usando posições.")
+            
+            if len(df.columns) >= 5:  # Assumimos que temos pelo menos 5 colunas
+                df.columns = colunas_esperadas[:len(df.columns)]
+                mapeamento_colunas = {col: col for col in colunas_esperadas if col in df.columns}
+            else:
+                return jsonify({"error": "Estrutura do CSV não reconhecida. O arquivo deve ter pelo menos 5 colunas."}), 400
+        
+        registros_importados = 0
+        registros_atualizados = 0
+        registros_ignorados = 0
+        
+        # Limpar todos os registros existentes antes da importação
+        # db.session.query(PlanoContas).delete()
+        # db.session.commit()
+        
+        # Processar linha a linha
+        for index, row in df.iterrows():
+            try:
+                # Obter valores com tratamento de nulos
+                sequencial = str(row.get(mapeamento_colunas.get('sequencial', ''), '')).strip() if 'sequencial' in mapeamento_colunas else ''
+                codigo = str(row.get(mapeamento_colunas.get('codigo', ''), '')).strip() if 'codigo' in mapeamento_colunas else ''
+                tipo = str(row.get(mapeamento_colunas.get('tipo', ''), '')).strip() if 'tipo' in mapeamento_colunas else ''
+                descricao = str(row.get(mapeamento_colunas.get('descricao', ''), '')).strip() if 'descricao' in mapeamento_colunas else ''
+                referencia = str(row.get(mapeamento_colunas.get('referencia', ''), '')).strip() if 'referencia' in mapeamento_colunas else ''
+                
+                # Pular linhas sem código ou descrição
+                if not codigo or codigo.lower() == 'none' or not descricao or descricao.lower() == 'none':
+                    registros_ignorados += 1
+                    continue
+                
+                # Determinar o nível com base no número de pontos no código
+                nivel = codigo.count('.') + 1
+                
+                # Determinar tipo da conta
+                tipo_conta = 'PASSIVO'
+                if codigo.startswith('1'):
+                    tipo_conta = 'ATIVO'
+                elif codigo.startswith('3'):
+                    tipo_conta = 'DESPESA'
+                elif codigo.startswith('4'):
+                    tipo_conta = 'RECEITA'
+                elif codigo.startswith('2.4'):
+                    tipo_conta = 'PATRIMONIO_LIQUIDO'
+                
+                # Determinar natureza do saldo
+                natureza_saldo = 'DEVEDOR' if codigo.startswith(('1', '3')) else 'CREDOR'
+                
+                # Determinar se permite lançamento
+                permite_lancamento = tipo.upper() != 'S'
+                
+                # Verificar se a conta já existe
+                conta_existente = PlanoContas.query.filter_by(codigo=codigo).first()
+                
+                if conta_existente:
+                    # Atualizar conta existente
+                    conta_existente.sequencial = sequencial
+                    conta_existente.codigo_reduzido = referencia
+                    conta_existente.descricao = descricao
+                    conta_existente.nivel = nivel
+                    conta_existente.tipo_conta = tipo_conta
+                    conta_existente.natureza_saldo = natureza_saldo
+                    conta_existente.permite_lancamento = permite_lancamento
+                    conta_existente.tipo = tipo
+                    conta_existente.referencia = referencia
+                    conta_existente.updated_at = datetime.utcnow()
+                    registros_atualizados += 1
+                else:
+                    # Criar nova conta
+                    nova_conta = PlanoContas(
+                        sequencial=sequencial,
+                        codigo=codigo,
+                        codigo_reduzido=referencia,
+                        descricao=descricao,
+                        nivel=nivel,
+                        tipo_conta=tipo_conta,
+                        natureza_saldo=natureza_saldo,
+                        permite_lancamento=permite_lancamento,
+                        tipo=tipo,
+                        referencia=referencia
+                    )
+                    
+                    # Identificar conta pai
+                    if '.' in codigo:
+                        codigo_pai = '.'.join(codigo.split('.')[:-1])
+                        conta_pai = PlanoContas.query.filter_by(codigo=codigo_pai).first()
+                        if conta_pai:
+                            nova_conta.conta_pai_id = conta_pai.id
+                    
+                    db.session.add(nova_conta)
+                    registros_importados += 1
+                
+                # Commit a cada 100 registros para evitar sobrecarga
+                if (registros_importados + registros_atualizados) % 100 == 0:
+                    db.session.commit()
+                    
+            except Exception as row_error:
+                current_app.logger.warning(f"Erro ao processar linha {index+1}: {str(row_error)}")
+                registros_ignorados += 1
+                continue  # Continuar com a próxima linha
+        
+        # Commit final
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Importação concluída com sucesso",
+            "registros_importados": registros_importados,
+            "registros_atualizados": registros_atualizados,
+            "registros_ignorados": registros_ignorados
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Erro na importação: {str(e)}")
+        return jsonify({"error": f"Erro ao processar arquivo: {str(e)}"}), 500
+    
+@api.route('/contabilidade/plano-contas', methods=['GET'])
+def get_plano_contas():
+    try:
+        # Buscar todos os registros do plano de contas
+        plano_contas = PlanoContas.query.all()
+        
+        # Transformar em dicionário para retorno
+        resultado = [{
+            'id': conta.id,
+            'sequencial': conta.sequencial,
+            'codigo': conta.codigo,
+            'codigo_reduzido': conta.codigo_reduzido,
+            'descricao': conta.descricao, 
+            'nivel': conta.nivel,
+            'conta_pai_id': conta.conta_pai_id,
+            'tipo_conta': conta.tipo_conta,
+            'natureza_saldo': conta.natureza_saldo,
+            'permite_lancamento': conta.permite_lancamento,
+            'tipo': 'S' if not conta.permite_lancamento else 'A',  # Convertendo para formato S/A
+            'referencia': conta.referencia
+        } for conta in plano_contas]
+        
+        return jsonify(resultado)
+    except Exception as e:
+        print(f"Erro ao buscar plano de contas: {str(e)}")
+        return jsonify({"error": "Erro ao buscar plano de contas", "details": str(e)}), 500

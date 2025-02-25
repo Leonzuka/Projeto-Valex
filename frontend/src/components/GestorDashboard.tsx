@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DashboardCard from './DashboardCard';
 import { useNavigate } from 'react-router-dom';
+import PlanoContasReport from './PlanoContasReport';
 
 interface ResumoDia {
   produtor_id: number;
@@ -31,6 +32,7 @@ const GestorDashboard: React.FC = () => {
   const [estatisticas, setEstatisticas] = useState<Estatisticas | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string>('dashboard');
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -80,6 +82,11 @@ const GestorDashboard: React.FC = () => {
     );
   }
 
+  // Renderiza o relatório do plano de contas
+  if (activeSection === 'contabilidade') {
+    return <PlanoContasReport onClose={() => setActiveSection('dashboard')} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -95,25 +102,28 @@ const GestorDashboard: React.FC = () => {
             <div className="flex items-center space-x-4">
               <button
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                onClick={() => {}}
+                onClick={() => setActiveSection('financeiro')}
               >
                 Financeiro
               </button>
               <button
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                onClick={() => {}}
+                onClick={() => setActiveSection('fiscal')}
               >
                 Fiscal
               </button>
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                onClick={() => {}}
+                className={`px-4 py-2 ${activeSection === 'contabilidade' 
+                  ? 'bg-blue-800' 
+                  : 'bg-blue-600 hover:bg-blue-700'} 
+                  text-white rounded-lg transition-all`}
+                onClick={() => setActiveSection('contabilidade')}
               >
                 Contabilidade
               </button>
               <button
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                onClick={() => {}}
+                onClick={() => setActiveSection('relatorios')}
               >
                 Relatórios
               </button>
