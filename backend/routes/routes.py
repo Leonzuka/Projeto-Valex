@@ -633,8 +633,8 @@ def get_plano_contas():
         print(f"Erro ao buscar plano de contas: {str(e)}")
         return jsonify({"error": "Erro ao buscar plano de contas", "details": str(e)}), 500
     
-@api.route('/contabilidade/importar-balancete-txt', methods=['POST'])
-def importar_balancete_txt():
+@api.route('/contabilidade/importar-balancete-csv', methods=['POST'])
+def importar_balancete_csv():
     if 'arquivo' not in request.files:
         return jsonify({"error": "Nenhum arquivo enviado"}), 400
         
@@ -642,173 +642,79 @@ def importar_balancete_txt():
     
     if arquivo.filename == '':
         return jsonify({"error": "Nome de arquivo vazio"}), 400
-        
-    # Verificar informações do arquivo para debug
-    current_app.logger.info(f"Nome do arquivo: {arquivo.filename}")
-    current_app.logger.info(f"Tipo MIME: {arquivo.content_type}")
-
+    
+    # Verificar extensão do arquivo
+    if not arquivo.filename.lower().endswith('.csv'):
+        return jsonify({"error": "O arquivo deve ter extensão .csv"}), 400
+    
     try:
-        # Extrair competência do nome do arquivo (BALANCETE 2024.1.TXT => 2024.1) ou do conteúdo do arquivo
-        competencia = None
-        nome_arquivo = arquivo.filename.upper()
-        if 'BALANCETE' in nome_arquivo:
-            match = re.search(r'(\d{4})\.(\d+)', nome_arquivo)
-            if match:
-                ano = match.group(1)
-                mes = match.group(2).zfill(2)
-                competencia = f"{ano}-{mes}"
-                
-        # Ler o conteúdo do arquivo
+        # Obter a competência (ano-mês) do formulário ou usar default 2024-12
+        competencia = request.form.get('competencia', '2024-12')
+        
+        # Ler o CSV com pandas
         arquivo.stream.seek(0)
+        df = pd.read_csv(
+            arquivo, 
+            sep=',', 
+            encoding='utf-8',
+            dtype={
+                'Conta': str,
+                'Reduz': 'Int64',  # Permite valores nulos
+                'Tp': str,
+                'Descricao': str,
+                'Saldo Anterior': float,
+                'Debito Periodo': float,
+                'Credito Periodo': float,
+                'Saldo Atual': float
+            },
+            decimal=',',  # Considera vírgula como separador decimal
+            thousands='.'  # Considera ponto como separador de milhares
+        )
         
-        # Tentar diferentes codificações
-        try:
-            conteudo = arquivo.read().decode('utf-8')
-        except UnicodeDecodeError:
-            arquivo.stream.seek(0)
-            try:
-                conteudo = arquivo.read().decode('iso-8859-1')
-            except UnicodeDecodeError:
-                arquivo.stream.seek(0)
-                conteudo = arquivo.read().decode('latin-1')
+        # Limpar registros anteriores da mesma competência
+        current_app.logger.info(f"Limpando registros anteriores da competência {competencia}")
+        db.session.query(BalanceteItem).filter_by(competencia=competencia).delete()
+        db.session.commit()
         
-        # Dividir por linhas
-        linhas = conteudo.split('\n')
-        
-        # Se não encontramos a competência no nome do arquivo, procurar no conteúdo
-        if not competencia:
-            # Procurar por padrões como "ACUMULADO DO MES 01 a 12"
-            for linha in linhas[:10]:  # Apenas nas primeiras linhas
-                acumulado_match = re.search(r'ACUMULADO DO MES (\d+) a (\d+)', linha)
-                if acumulado_match:
-                    # Vamos extrair o ano da data no topo do relatório
-                    data_match = re.search(r'(\d{2})/(\d{2})/(\d{2})', linhas[0])
-                    if data_match:
-                        dia, mes, ano = data_match.groups()
-                        ano_completo = f"20{ano}"  # Assumindo anos 2000+
-                        mes_final = acumulado_match.group(2).zfill(2)
-                        competencia = f"{ano_completo}-{mes_final}"
-                        break
-        
-        # Encontrar onde começam os dados reais (após os cabeçalhos)
-        cabecalho_linha = -1
-        for i, linha in enumerate(linhas):
-            linha_lower = linha.lower()
-            # Verifica diferentes combinações de termos que podem estar no cabeçalho
-            if (("conta" in linha_lower or "código" in linha_lower or "cod" in linha_lower) and 
-                ("descr" in linha_lower) and 
-                ("valor" in linha_lower or "saldo" in linha_lower)):
-                cabecalho_linha = i
-                current_app.logger.info(f"Possível cabeçalho encontrado na linha {i}: {linha}")
-                break
-        
-        # Após encontrar o cabeçalho
-        if cabecalho_linha != -1:
-            current_app.logger.info(f"Cabeçalho encontrado na linha {cabecalho_linha}: {linhas[cabecalho_linha]}")
-            # Verificar algumas linhas após o cabeçalho para debug
-            for i in range(cabecalho_linha + 2, min(cabecalho_linha + 5, len(linhas))):
-                current_app.logger.info(f"Linha {i}: {linhas[i]}")
-        
-        # Definir as posições das colunas com base no cabeçalho
-        posicoes_colunas = [
-            (0, 25),     # Conta
-            (25, 32),    # Redução
-            (32, 35),    # Tipo
-            (35, 72),    # Descrição
-            (72, 87),    # Valor Anterior
-            (87, 103),   # Débito
-            (103, 120),  # Crédito
-            (120, 137)   # Valor Atual
-        ]
-        
-        # Pular o cabeçalho e a linha de separação para começar a processar os dados
-        linha_inicial = cabecalho_linha + 2
-        
-        # Limpar registros anteriores da mesma competência, se houver
-        if competencia:
-            current_app.logger.info(f"Competência detectada: {competencia}")
-        
+        # Contador de registros
         registros_importados = 0
         registros_ignorados = 0
         
-        # Processar linha a linha
-        for i in range(linha_inicial, len(linhas)):
-            linha = linhas[i]
-            
-            # Pular linhas vazias ou linhas de cabeçalho de página
-            if not linha.strip() or "Pag.:" in linha:
-                continue
-                
-            # Pular linhas de cabeçalho que possam aparecer em páginas subsequentes
-            if "Conta" in linha and "Reduz" in linha and "Descricao" in linha:
-                # Pular esta linha e a próxima (linha de separação)
-                i += 2
-                continue
-                
+        # Processar cada linha do DataFrame
+        for index, row in df.iterrows():
             try:
-                # Verificar se a linha tem comprimento suficiente
-                if len(linha) < posicoes_colunas[-1][1]:
-                    registros_ignorados += 1
-                    continue
-                    
-                # Extrair valores com base nas posições fixas
-                conta = linha[posicoes_colunas[0][0]:posicoes_colunas[0][1]].strip()
-                reducao = linha[posicoes_colunas[1][0]:posicoes_colunas[1][1]].strip()
-                tipo = linha[posicoes_colunas[2][0]:posicoes_colunas[2][1]].strip()
-                descricao = linha[posicoes_colunas[3][0]:posicoes_colunas[3][1]].strip()
-                valor_anterior_str = linha[posicoes_colunas[4][0]:posicoes_colunas[4][1]].strip()
-                valor_periodo_debito_str = linha[posicoes_colunas[5][0]:posicoes_colunas[5][1]].strip()
-                valor_periodo_credito_str = linha[posicoes_colunas[6][0]:posicoes_colunas[6][1]].strip()
-                valor_atual_str = linha[posicoes_colunas[7][0]:posicoes_colunas[7][1]].strip()
-                
-                # Verificar se a linha contém dados válidos (tem número de conta)
-                if not conta or not conta[0].isdigit():
+                # Validar se a conta é válida
+                conta = str(row['Conta']).strip()
+                if not conta or not any(c.isdigit() for c in conta):
                     registros_ignorados += 1
                     continue
                 
-                # Converter valores para float (trocar vírgula por ponto)
-                try:
-                    valor_anterior = float(valor_anterior_str.replace('.', '').replace(',', '.') or 0)
-                    valor_periodo_debito = float(valor_periodo_debito_str.replace('.', '').replace(',', '.') or 0)
-                    valor_periodo_credito = float(valor_periodo_credito_str.replace('.', '').replace(',', '.') or 0)
-                    valor_atual = float(valor_atual_str.replace('.', '').replace(',', '.') or 0)
-                except ValueError:
-                    valor_anterior = 0.0
-                    valor_periodo_debito = 0.0
-                    valor_periodo_credito = 0.0
-                    valor_atual = 0.0
-                
-                # Converter redução para inteiro se possível
-                try:
-                    reducao_int = int(reducao) if reducao and reducao.isdigit() else None
-                except ValueError:
-                    reducao_int = None
-                
-                # Criar novo item
+                # Criar novo item de balancete
                 novo_item = BalanceteItem(
                     conta=conta,
-                    reducao=reducao_int,
-                    tipo=tipo[:1] if tipo else None,  # Pega só o primeiro caractere
-                    descricao=descricao,
-                    valor_anterior=valor_anterior,
-                    valor_periodo_debito=valor_periodo_debito,
-                    valor_periodo_credito=valor_periodo_credito,
-                    valor_atual=valor_atual,
+                    reducao=pd.notna(row['Reduz']) and int(row['Reduz']) or None,
+                    tipo=str(row['Tp'])[0] if pd.notna(row['Tp']) and str(row['Tp']) else None,
+                    descricao=str(row['Descricao']).strip(),
+                    valor_anterior=float(row['Saldo Anterior']) if pd.notna(row['Saldo Anterior']) else 0.0,
+                    valor_periodo_debito=float(row['Debito Periodo']) if pd.notna(row['Debito Periodo']) else 0.0,
+                    valor_periodo_credito=float(row['Credito Periodo']) if pd.notna(row['Credito Periodo']) else 0.0,
+                    valor_atual=float(row['Saldo Atual']) if pd.notna(row['Saldo Atual']) else 0.0,
+                    competencia=competencia,
                     data_importacao=datetime.utcnow()
                 )
                 
                 db.session.add(novo_item)
                 registros_importados += 1
                 
-                # Commit a cada 100 registros para evitar sobrecarga
+                # Commit a cada 100 registros
                 if registros_importados % 100 == 0:
                     db.session.commit()
                     current_app.logger.info(f"Importados {registros_importados} registros até agora")
-                    
+                
             except Exception as row_error:
-                current_app.logger.warning(f"Erro ao processar linha {i+1}: {str(row_error)}")
+                current_app.logger.warning(f"Erro ao processar linha {index+1}: {str(row_error)}")
                 registros_ignorados += 1
-                continue  # Continuar com a próxima linha
+                continue
         
         # Commit final
         db.session.commit()

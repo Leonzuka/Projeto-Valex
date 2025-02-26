@@ -63,6 +63,7 @@ const PlanoContasReport: React.FC<PlanoContasReportProps> = ({ onClose }) => {
     const [uploadStatus, setUploadStatus] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState<boolean>(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [competencia, setCompetencia] = useState<string>('2024-12');
   
   
 
@@ -636,86 +637,106 @@ const PlanoContasReport: React.FC<PlanoContasReportProps> = ({ onClose }) => {
             <div className="p-4">
               <h2 className="text-xl font-bold mb-4">Importação de Balancete</h2>
               
-              {/* Componente para importação de balancete */}
-              <div className="bg-white rounded-lg shadow p-4 mb-6">
-                <h3 className="text-lg font-medium mb-3">Importar Balancete</h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  Faça upload do arquivo TXT do balancete para importação.
-                </p>
-                
-                <div className="flex items-center space-x-4">
-                  <input
-                    type="file"
-                    accept=".txt,.TXT"
-                    onChange={(e) => {
-                      if (!e.target.files || e.target.files.length === 0) return;
-                      
-                      let file = e.target.files[0];
-                      setIsUploading(true);
-                      setUploadStatus('Enviando arquivo de balancete...');
-                      
-                      const formData = new FormData();
-                      formData.append('arquivo', file);
-                      
-                      axios.post(
-                        `${process.env.REACT_APP_API_URL}/contabilidade/importar-balancete-txt`,
-                        formData,
-                        {
-                          headers: {
-                            'Content-Type': 'multipart/form-data'
-                          }
-                        }
-                      )
-                      .then(response => {
-                        setUploadStatus(`Importação concluída! Balancete importado com ${response.data.registros_importados} registros para a competência ${response.data.competencia || 'não identificada'}`);
-                      })
-                      .catch(error => {
-                        console.error('Erro ao enviar arquivo:', error);
-                        const errorMessage = error.response?.data?.error || 'Erro desconhecido';
-                        const errorDetails = JSON.stringify(error.response?.data || {});
-                        console.log('Detalhes do erro:', errorDetails);
-                        setUploadStatus(`Erro na importação: ${errorMessage}. Detalhes: ${errorDetails}`);
-                      })
-                      .finally(() => {
-                        setIsUploading(false);
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = '';
-                        }
-                      });
-                    }}
-                    ref={fileInputRef}
-                    className="block w-full text-sm text-gray-500
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-md file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-blue-50 file:text-blue-700
-                      hover:file:bg-blue-100"
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* NOVO: Importação de CSV */}
+                <div className="bg-white rounded-lg shadow p-4 mb-6">
+                  <h3 className="text-lg font-medium mb-3">Importar Balancete CSV</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Faça upload do arquivo CSV do balancete para importação.
+                  </p>
                   
-                  {isUploading && (
-                    <div className="w-6 h-6 border-2 border-t-blue-600 border-blue-200 rounded-full animate-spin"></div>
-                  )}
-                </div>
-                
-                {uploadStatus && (
-                  <div className={`mt-3 p-3 rounded text-sm ${
-                    uploadStatus.startsWith('Erro') 
-                      ? 'bg-red-100 text-red-700' 
-                      : uploadStatus.startsWith('Importação') 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {uploadStatus}
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Competência (Ano-Mês):
+                    </label>
+                    <select 
+                      className="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                      value={competencia || '2024-12'}
+                      onChange={(e) => setCompetencia(e.target.value)}
+                    >
+                      <option value="2024-01">Janeiro/2024</option>
+                      <option value="2024-02">Fevereiro/2024</option>
+                      <option value="2024-03">Março/2024</option>
+                      <option value="2024-04">Abril/2024</option>
+                      <option value="2024-05">Maio/2024</option>
+                      <option value="2024-06">Junho/2024</option>
+                      <option value="2024-07">Julho/2024</option>
+                      <option value="2024-08">Agosto/2024</option>
+                      <option value="2024-09">Setembro/2024</option>
+                      <option value="2024-10">Outubro/2024</option>
+                      <option value="2024-11">Novembro/2024</option>
+                      <option value="2024-12">Dezembro/2024</option>
+                    </select>
                   </div>
-                )}
+                  
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="file"
+                      accept=".csv,.CSV"
+                      onChange={(e) => {
+                        if (!e.target.files || e.target.files.length === 0) return;
+                        
+                        let file = e.target.files[0];
+                        setIsUploading(true);
+                        setUploadStatus('Enviando arquivo de balancete CSV...');
+                        
+                        const formData = new FormData();
+                        formData.append('arquivo', file);
+                        formData.append('competencia', competencia || '2024-12');
+                        
+                        axios.post(
+                          `${process.env.REACT_APP_API_URL}/contabilidade/importar-balancete-csv`,
+                          formData,
+                          {
+                            headers: {
+                              'Content-Type': 'multipart/form-data'
+                            }
+                          }
+                        )
+                        .then(response => {
+                          setUploadStatus(`Importação CSV concluída! Balancete importado com ${response.data.registros_importados} registros para a competência ${response.data.competencia}`);
+                        })
+                        .catch(error => {
+                          console.error('Erro ao enviar arquivo:', error);
+                          const errorMessage = error.response?.data?.error || 'Erro desconhecido';
+                          setUploadStatus(`Erro na importação: ${errorMessage}`);
+                        })
+                        .finally(() => {
+                          setIsUploading(false);
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        });
+                      }}
+                      className="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-md file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100"
+                    />
+                    
+                    {isUploading && (
+                      <div className="w-6 h-6 border-2 border-t-blue-600 border-blue-200 rounded-full animate-spin"></div>
+                    )}
+                  </div>
+                </div>
               </div>
+              
+              {uploadStatus && (
+                <div className={`mt-3 p-3 rounded text-sm ${
+                  uploadStatus.startsWith('Erro') 
+                    ? 'bg-red-100 text-red-700' 
+                    : uploadStatus.startsWith('Importação') 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {uploadStatus}
+                </div>
+              )}
             </div>
           );
-        
-      default:
-        return null;
-    }
-  };
+      }}
 
   return (
     <div className="bg-gray-100 min-h-screen">
