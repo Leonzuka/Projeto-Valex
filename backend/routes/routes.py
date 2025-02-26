@@ -693,12 +693,21 @@ def importar_balancete_txt():
         # Encontrar onde começam os dados reais (após os cabeçalhos)
         cabecalho_linha = -1
         for i, linha in enumerate(linhas):
-            if "Conta" in linha and "Reduz" in linha and "Tp" in linha and "Descricao" in linha:
+            linha_lower = linha.lower()
+            # Verifica diferentes combinações de termos que podem estar no cabeçalho
+            if (("conta" in linha_lower or "código" in linha_lower or "cod" in linha_lower) and 
+                ("descr" in linha_lower) and 
+                ("valor" in linha_lower or "saldo" in linha_lower)):
                 cabecalho_linha = i
+                current_app.logger.info(f"Possível cabeçalho encontrado na linha {i}: {linha}")
                 break
         
-        if cabecalho_linha == -1:
-            return jsonify({"error": "Formato de arquivo não reconhecido. Não foi possível encontrar o cabeçalho do balancete."}), 400
+        # Após encontrar o cabeçalho
+        if cabecalho_linha != -1:
+            current_app.logger.info(f"Cabeçalho encontrado na linha {cabecalho_linha}: {linhas[cabecalho_linha]}")
+            # Verificar algumas linhas após o cabeçalho para debug
+            for i in range(cabecalho_linha + 2, min(cabecalho_linha + 5, len(linhas))):
+                current_app.logger.info(f"Linha {i}: {linhas[i]}")
         
         # Definir as posições das colunas com base no cabeçalho
         posicoes_colunas = [
@@ -717,9 +726,7 @@ def importar_balancete_txt():
         
         # Limpar registros anteriores da mesma competência, se houver
         if competencia:
-            current_app.logger.info(f"Limpando registros anteriores da competência {competencia}")
-            db.session.query(BalanceteItem).filter_by(competencia=competencia).delete()
-            db.session.commit()
+            current_app.logger.info(f"Competência detectada: {competencia}")
         
         registros_importados = 0
         registros_ignorados = 0
@@ -787,7 +794,6 @@ def importar_balancete_txt():
                     valor_periodo_debito=valor_periodo_debito,
                     valor_periodo_credito=valor_periodo_credito,
                     valor_atual=valor_atual,
-                    competencia=competencia,
                     data_importacao=datetime.utcnow()
                 )
                 
