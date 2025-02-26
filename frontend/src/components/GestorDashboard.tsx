@@ -83,7 +83,7 @@ const GestorDashboard: React.FC = () => {
   }
 
   // Renderiza o relatório do plano de contas
-  if (activeSection === 'contabilidade') {
+  if (activeSection === 'Plano de Contas') {
     return <PlanoContasReport onClose={() => setActiveSection('dashboard')} />;
   }
 
@@ -113,13 +113,13 @@ const GestorDashboard: React.FC = () => {
                 Fiscal
               </button>
               <button
-                className={`px-4 py-2 ${activeSection === 'contabilidade' 
+                className={`px-4 py-2 ${activeSection === 'Plano de Contas' 
                   ? 'bg-blue-800' 
                   : 'bg-blue-600 hover:bg-blue-700'} 
                   text-white rounded-lg transition-all`}
-                onClick={() => setActiveSection('contabilidade')}
+                onClick={() => setActiveSection('Plano de Contas')}
               >
-                Contabilidade
+                Plano de Contas
               </button>
               <button
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"

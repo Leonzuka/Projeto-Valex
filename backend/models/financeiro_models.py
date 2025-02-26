@@ -41,6 +41,14 @@ class BalanceteItem(db.Model):
     valor_periodo_credito = db.Column(DECIMAL(15,2), nullable=True)
     valor_atual = db.Column(DECIMAL(15,2), nullable=True)
     data_importacao = db.Column(db.DateTime, default=datetime.utcnow)
+    periodo = db.Column(db.String(50), nullable=True)  # Descrição do período (ex: "BALANCETE 2024-01")
+    competencia = db.Column(db.String(10), nullable=True)  # Formato "YYYY-MM"
+    
+    __table_args__ = (
+        db.Index('idx_balancete_conta', 'conta'),
+        db.Index('idx_balancete_competencia', 'competencia'),
+        db.Index('idx_balancete_data_importacao', 'data_importacao'),
+    )
     
 class PeriodoContabil(db.Model):
     __tablename__ = 'periodos_contabeis'

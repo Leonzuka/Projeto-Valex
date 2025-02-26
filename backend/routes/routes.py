@@ -1,11 +1,12 @@
 from flask import Blueprint, request, jsonify, current_app
 from models.models import db, Produtor, Fazenda, Variedade, Atividade, ClassificacaoUva
+from models.financeiro_models import BalanceteItem, PlanoContas
 from datetime import datetime, timedelta
 from pytz import timezone
 from io import StringIO
 import csv
 import pandas as pd
-from models.financeiro_models import PlanoContas
+import re
 
 # Criar Blueprint
 api = Blueprint('api', __name__)
@@ -296,7 +297,9 @@ def get_resumo_geral():
             atividades = db.session.query(
                 Atividade,
                 Variedade.nome.label('variedade_nome'),
-                ClassificacaoUva.classificacao.label('classificacao_nome')
+                ClassificacaoUva.classificacao.label('classificacao_nome'),
+                ClassificacaoUva.peso.label('classificacao_peso'),  # Adicionando o peso
+                ClassificacaoUva.caixa.label('classificacao_caixa')  # Adicionando a caixa
             ).join(
                 Variedade, Atividade.variedade_id == Variedade.id
             ).outerjoin(
@@ -310,7 +313,7 @@ def get_resumo_geral():
             resumo_detalhado = {}
             total_pallets = 0
             
-            for atividade, var_nome, class_nome in atividades:
+            for atividade, var_nome, class_nome, class_peso, class_caixa in atividades:
                 total_pallets += atividade.quantidade_pallets
                 
                 if var_nome not in resumo_detalhado:
@@ -322,9 +325,12 @@ def get_resumo_geral():
                 resumo_detalhado[var_nome]['total_pallets'] += atividade.quantidade_pallets
                 
                 if class_nome:
-                    if class_nome not in resumo_detalhado[var_nome]['classificacoes']:
-                        resumo_detalhado[var_nome]['classificacoes'][class_nome] = 0
-                    resumo_detalhado[var_nome]['classificacoes'][class_nome] += atividade.quantidade_pallets
+                    # Criar uma chave composta para classificação incluindo peso e tipo de caixa
+                    class_key = f"{class_nome} {class_peso} {class_caixa}"
+                    
+                    if class_key not in resumo_detalhado[var_nome]['classificacoes']:
+                        resumo_detalhado[var_nome]['classificacoes'][class_key] = 0
+                    resumo_detalhado[var_nome]['classificacoes'][class_key] += atividade.quantidade_pallets
             
             # Adicionar resumo do produtor ao resumo geral
             resumo_geral.append({
@@ -626,3 +632,177 @@ def get_plano_contas():
     except Exception as e:
         print(f"Erro ao buscar plano de contas: {str(e)}")
         return jsonify({"error": "Erro ao buscar plano de contas", "details": str(e)}), 500
+    
+@api.route('/contabilidade/importar-balancete', methods=['POST'])
+def importar_balancete():
+    if 'arquivo' not in request.files:
+        return jsonify({"error": "Nenhum arquivo enviado"}), 400
+        
+    arquivo = request.files['arquivo']
+    
+    if arquivo.filename == '':
+        return jsonify({"error": "Nome de arquivo vazio"}), 400
+        
+    # Verificar informações do arquivo para debug
+    current_app.logger.info(f"Nome do arquivo: {arquivo.filename}")
+    current_app.logger.info(f"Tipo MIME: {arquivo.content_type}")
+
+    try:
+        # Extrair competência do nome do arquivo (BALANCETE 2024.1.CSV => 2024.1)
+        competencia = None
+        nome_arquivo = arquivo.filename.upper()
+        if 'BALANCETE' in nome_arquivo:
+            match = re.search(r'(\d{4})\.(\d+)', nome_arquivo)
+            if match:
+                ano = match.group(1)
+                mes = match.group(2).zfill(2)
+                competencia = f"{ano}-{mes}"
+                
+        # Ler o conteúdo do arquivo
+        arquivo.stream.seek(0)
+        
+        # Tentar diferentes codificações
+        try:
+            conteudo = arquivo.read().decode('utf-8')
+        except UnicodeDecodeError:
+            arquivo.stream.seek(0)
+            try:
+                conteudo = arquivo.read().decode('iso-8859-1')
+            except UnicodeDecodeError:
+                arquivo.stream.seek(0)
+                conteudo = arquivo.read().decode('latin-1')
+        
+        # Verificar se é um arquivo de largura fixa (balancete formatado)
+        linhas = conteudo.split('\n')
+        
+        # Encontrar onde começam os dados reais (após os cabeçalhos)
+        cabecalho_linha = -1
+        for i, linha in enumerate(linhas):
+            if "Conta" in linha and "Reduz" in linha and "Descricao" in linha:
+                cabecalho_linha = i
+                break
+        
+        if cabecalho_linha == -1:
+            return jsonify({"error": "Formato de arquivo não reconhecido. Não foi possível encontrar o cabeçalho do balancete."}), 400
+        
+        # Determinar as posições das colunas baseadas na linha de separação (geralmente são traços)
+        linha_separacao = linhas[cabecalho_linha + 1] if cabecalho_linha + 1 < len(linhas) else ""
+        if not linha_separacao.strip().startswith('-'):
+            # Se não há linha de separação, tentar inferir as posições do próprio cabeçalho
+            linha_layout = linhas[cabecalho_linha]
+        else:
+            linha_layout = linha_separacao
+            
+        # Definir posições de coluna manualmente com base na análise do arquivo
+        posicoes_colunas = [
+            (0, 25),     # Conta
+            (25, 32),    # Redução
+            (32, 35),    # Tipo
+            (35, 72),    # Descrição
+            (72, 87),    # Valor Anterior
+            (87, 103),   # Débito
+            (103, 120),  # Crédito
+            (120, 137)   # Valor Atual
+        ]
+        
+        current_app.logger.info(f"Posições de colunas detectadas: {posicoes_colunas}")
+        
+        # Pular o cabeçalho e a linha de separação para começar a processar os dados
+        linha_inicial = cabecalho_linha + 2
+        
+        # Limpar registros anteriores da mesma competência, se houver
+        if competencia:
+            db.session.query(BalanceteItem).filter_by(competencia=competencia).delete()
+            db.session.commit()
+            current_app.logger.info(f"Removidos registros anteriores da competência {competencia}")
+        
+        registros_importados = 0
+        registros_ignorados = 0
+        
+        # Processar linha a linha
+        for i in range(linha_inicial, len(linhas)):
+            linha = linhas[i]
+            
+            # Pular linhas vazias
+            if not linha.strip():
+                continue
+                
+            try:
+                # Extrair valores com base nas posições fixas
+                if len(linha) < posicoes_colunas[-1][1]:  # Linha muito curta
+                    registros_ignorados += 1
+                    continue
+                    
+                conta = linha[posicoes_colunas[0][0]:posicoes_colunas[0][1]].strip()
+                reducao = linha[posicoes_colunas[1][0]:posicoes_colunas[1][1]].strip()
+                tipo = linha[posicoes_colunas[2][0]:posicoes_colunas[2][1]].strip()
+                descricao = linha[posicoes_colunas[3][0]:posicoes_colunas[3][1]].strip()
+                valor_anterior_str = linha[posicoes_colunas[4][0]:posicoes_colunas[4][1]].strip()
+                valor_periodo_debito_str = linha[posicoes_colunas[5][0]:posicoes_colunas[5][1]].strip()
+                valor_periodo_credito_str = linha[posicoes_colunas[6][0]:posicoes_colunas[6][1]].strip()
+                valor_atual_str = linha[posicoes_colunas[7][0]:posicoes_colunas[7][1]].strip()
+                
+                # Verificar se a linha contém dados válidos (tem número de conta)
+                if not conta or not conta[0].isdigit():
+                    registros_ignorados += 1
+                    continue
+                
+                # Converter valores para float (trocar vírgula por ponto)
+                try:
+                    valor_anterior = float(valor_anterior_str.replace('.', '').replace(',', '.') or 0)
+                    valor_periodo_debito = float(valor_periodo_debito_str.replace('.', '').replace(',', '.') or 0)
+                    valor_periodo_credito = float(valor_periodo_credito_str.replace('.', '').replace(',', '.') or 0)
+                    valor_atual = float(valor_atual_str.replace('.', '').replace(',', '.') or 0)
+                except ValueError:
+                    valor_anterior = 0.0
+                    valor_periodo_debito = 0.0
+                    valor_periodo_credito = 0.0
+                    valor_atual = 0.0
+                
+                # Converter redução para inteiro se possível
+                try:
+                    reducao_int = int(reducao) if reducao and reducao.isdigit() else None
+                except ValueError:
+                    reducao_int = None
+                
+                # Criar novo item
+                novo_item = BalanceteItem(
+                    conta=conta,
+                    reducao=reducao_int,
+                    tipo=tipo[:1] if tipo else None,  # Pega só o primeiro caractere
+                    descricao=descricao,
+                    valor_anterior=valor_anterior,
+                    valor_periodo_debito=valor_periodo_debito,
+                    valor_periodo_credito=valor_periodo_credito,
+                    valor_atual=valor_atual,
+                    competencia=competencia,
+                    data_importacao=datetime.utcnow()
+                )
+                
+                db.session.add(novo_item)
+                registros_importados += 1
+                
+                # Commit a cada 100 registros para evitar sobrecarga
+                if registros_importados % 100 == 0:
+                    db.session.commit()
+                    current_app.logger.info(f"Importados {registros_importados} registros até agora")
+                    
+            except Exception as row_error:
+                current_app.logger.warning(f"Erro ao processar linha {i+1}: {str(row_error)}")
+                registros_ignorados += 1
+                continue  # Continuar com a próxima linha
+        
+        # Commit final
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Importação concluída com sucesso",
+            "registros_importados": registros_importados,
+            "registros_ignorados": registros_ignorados,
+            "competencia": competencia
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Erro na importação: {str(e)}")
+        return jsonify({"error": f"Erro ao processar arquivo: {str(e)}"}), 500

@@ -596,9 +596,7 @@ const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.variedade}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {atividade.tipo_atividade === 'EMBALAGEM' ? 
-                          (atividade.classificacao?.includes('ISOPOR') 
-                            ? 'VALEX SACOLA' 
-                            : 'VALEX') 
+                          atividade.classificacao
                           : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

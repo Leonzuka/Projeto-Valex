@@ -20,92 +20,152 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [produtores, setProdutores] = useState<Array<{ id: number; nome: string }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (type === 'cooperado') {
-        axios.get(`${API_URL}/produtores`, {
-            withCredentials: true,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            console.log('Dados recebidos:', response.data);
-            setProdutores(response.data);
-        })
-        .catch(error => {
-            console.error('Erro completo:', error);
-            console.error('Erro detalhado:', error.response?.data || error.message);
-            
-            // Mensagem mais específica para o usuário
-            const mensagem = error.response?.data?.details || 
-                           error.response?.data?.error || 
-                           'Erro ao carregar lista de produtores. Por favor, tente novamente.';
-            alert(mensagem);
-        });
+      setIsLoading(true);
+      axios.get(`${API_URL}/produtores`, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        console.log('Dados recebidos:', response.data);
+        setProdutores(response.data);
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error('Erro completo:', error);
+        console.error('Erro detalhado:', error.response?.data || error.message);
+        
+        // Mensagem mais específica para o usuário
+        const mensagem = error.response?.data?.details || 
+                        error.response?.data?.error || 
+                        'Erro ao carregar lista de produtores. Por favor, tente novamente.';
+        alert(mensagem);
+        setIsLoading(false);
+      });
     }
-}, [type]);
+  }, [type]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (type === 'gestor') {
-      if (username === 'adm' && password === '123') {
-        navigate('/gestor-dashboard');
+    setIsLoading(true);
+    
+    setTimeout(() => {
+      if (type === 'gestor') {
+        if (username === 'adm' && password === '123') {
+          navigate('/gestor-dashboard');
+        } else {
+          alert('Credenciais inválidas!');
+        }
       } else {
-        alert('Credenciais inválidas!');
+        if (password === '123') {
+          navigate('/cooperado-dashboard', { state: { cooperadoNome: username } });
+        } else {
+          alert('Senha inválida!');
+        }
       }
-    } else {
-      if (password === '123') {
-        navigate('/cooperado-dashboard', { state: { cooperadoNome: username } });
-      } else {
-        alert('Senha inválida!');
-      }
-    }
+      setIsLoading(false);
+    }, 600); // Pequeno delay para mostrar o estado de loading
   };
 
   return (
-    <div className="login-overlay">
-      <div className="login-card">
-        <h2 className="login-title">
-          Login - {type === 'gestor' ? 'Gestor' : 'Cooperado'}
-        </h2>
+    <div className="login-overlay" onClick={onClose}>
+      <div 
+        className="login-card" 
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="login-header">
+          <h2 className="login-title">
+            {type === 'gestor' ? 'Acesso de Gestor' : 'Acesso de Cooperado'}
+          </h2>
+          <button 
+            onClick={onClose} 
+            className="login-close-button"
+            aria-label="Fechar"
+          >
+            &times;
+          </button>
+        </div>
+
         <form onSubmit={handleLogin} className="login-form">
           {type === 'gestor' ? (
-            <input
-              type="text"
-              placeholder="Usuário"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="login-input"
-            />
+            <div className="login-input-group">
+              <label htmlFor="username" className="login-label">Usuário</label>
+              <input
+                id="username"
+                type="text"
+                placeholder="Digite seu usuário"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="login-input"
+                required
+              />
+            </div>
           ) : (
-            <select
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="login-input"
-            >
-              <option value="">Selecione um cooperado</option>
-              {produtores.map((produtor) => (
-                <option key={produtor.id} value={produtor.nome}>
-                  {produtor.nome}
-                </option>
-              ))}
-            </select>
+            <div className="login-input-group">
+              <label htmlFor="cooperado" className="login-label">Cooperado</label>
+              {isLoading ? (
+                <div className="login-loading-select">
+                  <div className="login-loading-spinner"></div>
+                  <span>Carregando...</span>
+                </div>
+              ) : (
+                <select
+                  id="cooperado"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="login-input login-select"
+                  required
+                >
+                  <option value="">Selecione um cooperado</option>
+                  {produtores.map((produtor) => (
+                    <option key={produtor.id} value={produtor.nome}>
+                      {produtor.nome}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           )}
-          <input
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="login-input"
-            autoComplete="new-password" 
-          />
+          
+          <div className="login-input-group">
+            <label htmlFor="password" className="login-label">Senha</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Digite sua senha"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="login-input"
+              autoComplete="new-password"
+              required
+            />
+          </div>
+
           <div className="login-buttons">
-            <button type="submit" className="login-button">
-              Entrar
-            </button>
-            <button type="button" onClick={onClose} className="cancel-button">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="login-button cancel-button"
+            >
               Cancelar
+            </button>
+            <button 
+              type="submit" 
+              className="login-button submit-button"
+              disabled={isLoading || (!username || !password)}
+            >
+              {isLoading ? (
+                <span className="login-button-loading">
+                  <span className="login-loading-dot"></span>
+                  <span className="login-loading-dot"></span>
+                  <span className="login-loading-dot"></span>
+                </span>
+              ) : 'Entrar'}
             </button>
           </div>
         </form>

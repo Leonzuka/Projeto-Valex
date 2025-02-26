@@ -186,6 +186,40 @@ const PlanoContasReport: React.FC<PlanoContasReportProps> = ({ onClose }) => {
     );
   };
 
+  const handleBalanceteUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    const file = e.target.files[0];
+    setIsUploading(true);
+    setUploadStatus('Enviando balancete...');
+    
+    const formData = new FormData();
+    formData.append('arquivo', file);
+    
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/contabilidade/importar-balancete`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      setUploadStatus(`Importação concluída! Registros importados: ${response.data.registros_importados}, Competência: ${response.data.competencia || 'Não detectada'}`);
+    } catch (error: any) {
+      console.error('Erro ao enviar arquivo:', error);
+      const errorMessage = error.response?.data?.error || 'Erro desconhecido';
+      setUploadStatus(`Erro na importação: ${errorMessage}`);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
@@ -596,6 +630,51 @@ const PlanoContasReport: React.FC<PlanoContasReportProps> = ({ onClose }) => {
             </div>
           </div>
         );
+
+        case 'balancete':
+          return (
+            <div className="p-4">
+              <h2 className="text-xl font-bold mb-4">Importação de Balancete</h2>
+              
+              <div className="bg-white rounded-lg shadow p-4 mb-6">
+                <h3 className="text-lg font-medium mb-3">Importar Balancete</h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Faça upload do arquivo CSV do balancete.
+                </p>
+                
+                <div className="flex items-center space-x-4">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleBalanceteUpload}
+                    ref={fileInputRef}
+                    className="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-md file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-blue-50 file:text-blue-700
+                      hover:file:bg-blue-100"
+                  />
+                  
+                  {isUploading && (
+                    <div className="w-6 h-6 border-2 border-t-blue-600 border-blue-200 rounded-full animate-spin"></div>
+                  )}
+                </div>
+                
+                {uploadStatus && (
+                  <div className={`mt-3 p-3 rounded text-sm ${
+                    uploadStatus.startsWith('Erro') 
+                      ? 'bg-red-100 text-red-700' 
+                      : uploadStatus.startsWith('Importação') 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {uploadStatus}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
         
       default:
         return null;
@@ -652,6 +731,16 @@ const PlanoContasReport: React.FC<PlanoContasReportProps> = ({ onClose }) => {
                 onClick={() => setActiveTab('pesquisa')}
                 >
                 Pesquisa de Contas
+                </button>
+                <button
+                  className={`py-3 px-4 font-medium border-b-2 ${
+                    activeTab === 'balancete' 
+                    ? 'border-blue-500 text-blue-600' 
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                  onClick={() => setActiveTab('balancete')}
+                >
+                  Balancete
                 </button>
             </div>
             </div>
