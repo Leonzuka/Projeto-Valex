@@ -633,8 +633,8 @@ def get_plano_contas():
         print(f"Erro ao buscar plano de contas: {str(e)}")
         return jsonify({"error": "Erro ao buscar plano de contas", "details": str(e)}), 500
     
-@api.route('/contabilidade/importar-balancete', methods=['POST'])
-def importar_balancete():
+@api.route('/contabilidade/importar-balancete-txt', methods=['POST'])
+def importar_balancete_txt():
     if 'arquivo' not in request.files:
         return jsonify({"error": "Nenhum arquivo enviado"}), 400
         
@@ -648,7 +648,7 @@ def importar_balancete():
     current_app.logger.info(f"Tipo MIME: {arquivo.content_type}")
 
     try:
-        # Extrair competência do nome do arquivo (BALANCETE 2024.1.CSV => 2024.1)
+        # Extrair competência do nome do arquivo (BALANCETE 2024.1.TXT => 2024.1) ou do conteúdo do arquivo
         competencia = None
         nome_arquivo = arquivo.filename.upper()
         if 'BALANCETE' in nome_arquivo:
@@ -672,28 +672,35 @@ def importar_balancete():
                 arquivo.stream.seek(0)
                 conteudo = arquivo.read().decode('latin-1')
         
-        # Verificar se é um arquivo de largura fixa (balancete formatado)
+        # Dividir por linhas
         linhas = conteudo.split('\n')
+        
+        # Se não encontramos a competência no nome do arquivo, procurar no conteúdo
+        if not competencia:
+            # Procurar por padrões como "ACUMULADO DO MES 01 a 12"
+            for linha in linhas[:10]:  # Apenas nas primeiras linhas
+                acumulado_match = re.search(r'ACUMULADO DO MES (\d+) a (\d+)', linha)
+                if acumulado_match:
+                    # Vamos extrair o ano da data no topo do relatório
+                    data_match = re.search(r'(\d{2})/(\d{2})/(\d{2})', linhas[0])
+                    if data_match:
+                        dia, mes, ano = data_match.groups()
+                        ano_completo = f"20{ano}"  # Assumindo anos 2000+
+                        mes_final = acumulado_match.group(2).zfill(2)
+                        competencia = f"{ano_completo}-{mes_final}"
+                        break
         
         # Encontrar onde começam os dados reais (após os cabeçalhos)
         cabecalho_linha = -1
         for i, linha in enumerate(linhas):
-            if "Conta" in linha and "Reduz" in linha and "Descricao" in linha:
+            if "Conta" in linha and "Reduz" in linha and "Tp" in linha and "Descricao" in linha:
                 cabecalho_linha = i
                 break
         
         if cabecalho_linha == -1:
             return jsonify({"error": "Formato de arquivo não reconhecido. Não foi possível encontrar o cabeçalho do balancete."}), 400
         
-        # Determinar as posições das colunas baseadas na linha de separação (geralmente são traços)
-        linha_separacao = linhas[cabecalho_linha + 1] if cabecalho_linha + 1 < len(linhas) else ""
-        if not linha_separacao.strip().startswith('-'):
-            # Se não há linha de separação, tentar inferir as posições do próprio cabeçalho
-            linha_layout = linhas[cabecalho_linha]
-        else:
-            linha_layout = linha_separacao
-            
-        # Definir posições de coluna manualmente com base na análise do arquivo
+        # Definir as posições das colunas com base no cabeçalho
         posicoes_colunas = [
             (0, 25),     # Conta
             (25, 32),    # Redução
@@ -705,16 +712,14 @@ def importar_balancete():
             (120, 137)   # Valor Atual
         ]
         
-        current_app.logger.info(f"Posições de colunas detectadas: {posicoes_colunas}")
-        
         # Pular o cabeçalho e a linha de separação para começar a processar os dados
         linha_inicial = cabecalho_linha + 2
         
         # Limpar registros anteriores da mesma competência, se houver
         if competencia:
+            current_app.logger.info(f"Limpando registros anteriores da competência {competencia}")
             db.session.query(BalanceteItem).filter_by(competencia=competencia).delete()
             db.session.commit()
-            current_app.logger.info(f"Removidos registros anteriores da competência {competencia}")
         
         registros_importados = 0
         registros_ignorados = 0
@@ -723,16 +728,23 @@ def importar_balancete():
         for i in range(linha_inicial, len(linhas)):
             linha = linhas[i]
             
-            # Pular linhas vazias
-            if not linha.strip():
+            # Pular linhas vazias ou linhas de cabeçalho de página
+            if not linha.strip() or "Pag.:" in linha:
+                continue
+                
+            # Pular linhas de cabeçalho que possam aparecer em páginas subsequentes
+            if "Conta" in linha and "Reduz" in linha and "Descricao" in linha:
+                # Pular esta linha e a próxima (linha de separação)
+                i += 2
                 continue
                 
             try:
-                # Extrair valores com base nas posições fixas
-                if len(linha) < posicoes_colunas[-1][1]:  # Linha muito curta
+                # Verificar se a linha tem comprimento suficiente
+                if len(linha) < posicoes_colunas[-1][1]:
                     registros_ignorados += 1
                     continue
                     
+                # Extrair valores com base nas posições fixas
                 conta = linha[posicoes_colunas[0][0]:posicoes_colunas[0][1]].strip()
                 reducao = linha[posicoes_colunas[1][0]:posicoes_colunas[1][1]].strip()
                 tipo = linha[posicoes_colunas[2][0]:posicoes_colunas[2][1]].strip()

@@ -636,17 +636,53 @@ const PlanoContasReport: React.FC<PlanoContasReportProps> = ({ onClose }) => {
             <div className="p-4">
               <h2 className="text-xl font-bold mb-4">Importação de Balancete</h2>
               
+              {/* Componente para importação de balancete */}
               <div className="bg-white rounded-lg shadow p-4 mb-6">
                 <h3 className="text-lg font-medium mb-3">Importar Balancete</h3>
                 <p className="text-sm text-gray-600 mb-3">
-                  Faça upload do arquivo CSV do balancete.
+                  Faça upload do arquivo TXT do balancete para importação.
                 </p>
                 
                 <div className="flex items-center space-x-4">
                   <input
                     type="file"
-                    accept=".csv"
-                    onChange={handleBalanceteUpload}
+                    accept=".txt,.TXT"
+                    onChange={(e) => {
+                      if (!e.target.files || e.target.files.length === 0) return;
+                      
+                      let file = e.target.files[0];
+                      setIsUploading(true);
+                      setUploadStatus('Enviando arquivo de balancete...');
+                      
+                      const formData = new FormData();
+                      formData.append('arquivo', file);
+                      
+                      axios.post(
+                        `${process.env.REACT_APP_API_URL}/contabilidade/importar-balancete-txt`,
+                        formData,
+                        {
+                          headers: {
+                            'Content-Type': 'multipart/form-data'
+                          }
+                        }
+                      )
+                      .then(response => {
+                        setUploadStatus(`Importação concluída! Balancete importado com ${response.data.registros_importados} registros para a competência ${response.data.competencia || 'não identificada'}`);
+                      })
+                      .catch(error => {
+                        console.error('Erro ao enviar arquivo:', error);
+                        const errorMessage = error.response?.data?.error || 'Erro desconhecido';
+                        const errorDetails = JSON.stringify(error.response?.data || {});
+                        console.log('Detalhes do erro:', errorDetails);
+                        setUploadStatus(`Erro na importação: ${errorMessage}. Detalhes: ${errorDetails}`);
+                      })
+                      .finally(() => {
+                        setIsUploading(false);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      });
+                    }}
                     ref={fileInputRef}
                     className="block w-full text-sm text-gray-500
                       file:mr-4 file:py-2 file:px-4
