@@ -3,6 +3,7 @@ import axios from 'axios';
 import DashboardCard from './DashboardCard';
 import { useNavigate } from 'react-router-dom';
 import PlanoContasReport from './PlanoContasReport';
+import FinanceiroReports from './FinanceiroReports'
 
 interface ResumoDia {
   produtor_id: number;
@@ -85,6 +86,10 @@ const GestorDashboard: React.FC = () => {
   // Renderiza o relatório do plano de contas
   if (activeSection === 'Plano de Contas') {
     return <PlanoContasReport onClose={() => setActiveSection('dashboard')} />;
+  }
+
+  if (activeSection === 'financeiro') {
+    return <FinanceiroReports onClose={() => setActiveSection('dashboard')} />;
   }
 
   return (

@@ -671,9 +671,9 @@ def importar_balancete_csv():
             thousands='.'  # Considera ponto como separador de milhares
         )
         
-        # Limpar registros anteriores da mesma competência
-        current_app.logger.info(f"Limpando registros anteriores da competência {competencia}")
-        db.session.query(BalanceteItem).filter_by(competencia=competencia).delete()
+        # Limpar todos os registros existentes (como são dados acumulados, fazemos uma limpeza completa)
+        current_app.logger.info("Limpando registros anteriores antes da importação")
+        db.session.query(BalanceteItem).delete()
         db.session.commit()
         
         # Contador de registros
@@ -699,7 +699,7 @@ def importar_balancete_csv():
                     valor_periodo_debito=float(row['Debito Periodo']) if pd.notna(row['Debito Periodo']) else 0.0,
                     valor_periodo_credito=float(row['Credito Periodo']) if pd.notna(row['Credito Periodo']) else 0.0,
                     valor_atual=float(row['Saldo Atual']) if pd.notna(row['Saldo Atual']) else 0.0,
-                    competencia=competencia,
+                    competencia=competencia,  # Adicionar competência fixa
                     data_importacao=datetime.utcnow()
                 )
                 
@@ -730,3 +730,76 @@ def importar_balancete_csv():
         db.session.rollback()
         current_app.logger.error(f"Erro na importação: {str(e)}")
         return jsonify({"error": f"Erro ao processar arquivo: {str(e)}"}), 500
+    
+@api.route('/contabilidade/balancete/completo', methods=['GET'])
+def get_balancete_completo():
+    """
+    Retorna todos os itens do balancete (dados acumulados 2024)
+    """
+    try:
+        # Buscar todos os itens do balancete
+        itens = BalanceteItem.query.all()
+        
+        # Transformar em dicionário para retorno
+        resultado = [{
+            'id': item.id,
+            'conta': item.conta,
+            'reducao': item.reducao,
+            'tipo': item.tipo,
+            'descricao': item.descricao,
+            'valor_anterior': float(item.valor_anterior) if item.valor_anterior else 0.0,
+            'valor_periodo_debito': float(item.valor_periodo_debito) if item.valor_periodo_debito else 0.0,
+            'valor_periodo_credito': float(item.valor_periodo_credito) if item.valor_periodo_credito else 0.0,
+            'valor_atual': float(item.valor_atual) if item.valor_atual else 0.0,
+            'competencia': getattr(item, 'competencia', '2024-12')  # Usar atributo se existir, caso contrário default
+        } for item in itens]
+        
+        return jsonify(resultado)
+    except Exception as e:
+        current_app.logger.error(f"Erro ao buscar balancete completo: {str(e)}")
+        return jsonify({"error": "Erro ao buscar dados do balancete", "details": str(e)}), 500
+    
+@api.route('/contabilidade/competencias', methods=['GET'])
+def get_competencias():
+    """
+    Retorna a lista de competências disponíveis no balancete
+    """
+    try:
+        # Como os dados são acumulados de 2024, retornar apenas 2024-12
+        return jsonify(['2024-12'])
+    except Exception as e:
+        current_app.logger.error(f"Erro ao buscar competências: {str(e)}")
+        return jsonify({"error": "Erro ao buscar competências disponíveis", "details": str(e)}), 500
+    
+@api.route('/contabilidade/balancete/<string:competencia>', methods=['GET'])
+def get_balancete(competencia):
+    """
+    Retorna os itens do balancete para a competência especificada.
+    Como os dados são acumulados de 2024, retorna todos os itens independente da competência.
+    """
+    try:
+        # Validar formato da competência
+        if not re.match(r'^\d{4}-\d{2}$', competencia):
+            return jsonify({"error": "Formato de competência inválido. Use AAAA-MM"}), 400
+        
+        # Buscar todos os itens do balancete (independente da competência)
+        itens = BalanceteItem.query.all()
+        
+        # Transformar em dicionário para retorno
+        resultado = [{
+            'id': item.id,
+            'conta': item.conta,
+            'reducao': item.reducao,
+            'tipo': item.tipo,
+            'descricao': item.descricao,
+            'valor_anterior': float(item.valor_anterior) if item.valor_anterior else 0.0,
+            'valor_periodo_debito': float(item.valor_periodo_debito) if item.valor_periodo_debito else 0.0,
+            'valor_periodo_credito': float(item.valor_periodo_credito) if item.valor_periodo_credito else 0.0,
+            'valor_atual': float(item.valor_atual) if item.valor_atual else 0.0,
+            'competencia': competencia  # Usar a competência informada na URL
+        } for item in itens]
+        
+        return jsonify(resultado)
+    except Exception as e:
+        current_app.logger.error(f"Erro ao buscar balancete: {str(e)}")
+        return jsonify({"error": "Erro ao buscar dados do balancete", "details": str(e)}), 500

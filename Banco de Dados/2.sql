@@ -16,6 +16,38 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `atividade`
+--
+
+DROP TABLE IF EXISTS `atividade`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `atividade` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `produtor_id` int NOT NULL,
+  `fazenda_id` int NOT NULL,
+  `variedade_id` int NOT NULL,
+  `tipo_atividade` varchar(20) NOT NULL,
+  `quantidade_pallets` int NOT NULL,
+  `caixas` int DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `classificacao_id` int DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `produtor_id` (`produtor_id`),
+  KEY `fazenda_id` (`fazenda_id`),
+  KEY `variedade_id` (`variedade_id`),
+  KEY `fk_atividade_classificacao` (`classificacao_id`),
+  KEY `idx_atividade_produtor_id` (`produtor_id`),
+  KEY `idx_atividade_created_at` (`created_at`),
+  CONSTRAINT `atividade_ibfk_2` FOREIGN KEY (`fazenda_id`) REFERENCES `fazenda` (`id`),
+  CONSTRAINT `atividade_ibfk_3` FOREIGN KEY (`variedade_id`) REFERENCES `variedade` (`id`),
+  CONSTRAINT `atividade_produtor_fk` FOREIGN KEY (`produtor_id`) REFERENCES `produtor` (`id`),
+  CONSTRAINT `fk_atividade_classificacao` FOREIGN KEY (`classificacao_id`) REFERENCES `classificacao_uva` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `balancete_items`
 --
 
@@ -33,13 +65,10 @@ CREATE TABLE `balancete_items` (
   `valor_periodo_credito` decimal(15,2) DEFAULT NULL,
   `valor_atual` decimal(15,2) DEFAULT NULL,
   `data_importacao` datetime DEFAULT CURRENT_TIMESTAMP,
-  `periodo` varchar(10) DEFAULT NULL,
-  `competencia` varchar(10) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_balancete_conta` (`conta`),
-  KEY `idx_balancete_competencia` (`competencia`),
   KEY `idx_balancete_data_importacao` (`data_importacao`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=615 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -60,6 +89,24 @@ CREATE TABLE `classificacao_uva` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `configuracoes_relatorios`
+--
+
+DROP TABLE IF EXISTS `configuracoes_relatorios`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `configuracoes_relatorios` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `nome_relatorio` varchar(100) NOT NULL,
+  `tipo_relatorio` varchar(50) DEFAULT NULL,
+  `configuracao` json DEFAULT NULL COMMENT 'Configurações específicas do relatório em formato JSON',
+  `ativo` tinyint(1) DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -317,4 +364,4 @@ CREATE TABLE `variedade` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-26 10:18:31
+-- Dump completed on 2025-02-26 11:42:23
