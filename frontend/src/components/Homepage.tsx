@@ -130,15 +130,6 @@ function Homepage() {
             </button>
           </div>
         </div>
-        
-        <div className="bg-white/70 dark:bg-gray-800/70 rounded-lg p-4 text-center shadow-md backdrop-blur-sm">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-            <strong>Acesso Gestor:</strong> Usuário: adm | Senha: 123
-          </p>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            <strong>Acesso Cooperados:</strong> Senha padrão: 123
-          </p>
-        </div>
       </main>
       
       {/* Rodapé */}

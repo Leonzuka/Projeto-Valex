@@ -56,7 +56,7 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
     
     setTimeout(() => {
       if (type === 'gestor') {
-        if (username === 'adm' && password === '123') {
+        if (username === 'contábil' && password === 'Valex25') {
           navigate('/gestor-dashboard');
         } else {
           alert('Credenciais inválidas!');
