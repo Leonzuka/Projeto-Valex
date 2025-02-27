@@ -67,14 +67,14 @@ const PlanoContasReport: React.FC<PlanoContasReportProps> = ({ onClose }) => {
   
   
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const response = await axios.get(`${process.env.REACT_APP_API_URL}/contabilidade/plano-contas`);
-        const contasData = response.data;
+    useEffect(() => {
+      const fetchData = async () => {
+        setLoading(true);
+        setError(null);
+        
+        try {
+          const response = await axios.get(`${process.env.REACT_APP_API_URL}/contabilidade/plano-contas`);
+          const contasData = response.data;
         
         // Processar os dados
         const total = contasData.length;
@@ -123,15 +123,16 @@ const PlanoContasReport: React.FC<PlanoContasReportProps> = ({ onClose }) => {
         });
         
         setLoading(false);
-      } catch (err) {
-        console.error('Erro ao carregar dados:', err);
-        setError('Erro ao carregar os dados do plano de contas. Por favor, tente novamente.');
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [COLORS]);
+    } catch (err) {
+      console.error('Erro ao carregar dados:', err);
+      setError('Erro ao carregar os dados do plano de contas. Por favor, tente novamente.');
+      setLoading(false);
+    }
+  };
+  
+  fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   useEffect(() => {
     if (data && search.trim()) {
@@ -185,40 +186,6 @@ const PlanoContasReport: React.FC<PlanoContasReportProps> = ({ onClose }) => {
         )}
       </div>
     );
-  };
-
-  const handleBalanceteUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    
-    const file = e.target.files[0];
-    setIsUploading(true);
-    setUploadStatus('Enviando balancete...');
-    
-    const formData = new FormData();
-    formData.append('arquivo', file);
-    
-    try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/contabilidade/importar-balancete`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
-      
-      setUploadStatus(`Importação concluída! Registros importados: ${response.data.registros_importados}, Competência: ${response.data.competencia || 'Não detectada'}`);
-    } catch (error: any) {
-      console.error('Erro ao enviar arquivo:', error);
-      const errorMessage = error.response?.data?.error || 'Erro desconhecido';
-      setUploadStatus(`Erro na importação: ${errorMessage}`);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

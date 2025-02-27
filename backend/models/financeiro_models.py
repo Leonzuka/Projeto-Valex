@@ -1,6 +1,6 @@
 from datetime import datetime
 from models.models import db
-from sqlalchemy import DECIMAL, Date, Text, Enum, Boolean
+from sqlalchemy import DECIMAL, Date, Text, Enum, Boolean # type: ignore
 
 class PlanoContas(db.Model):
     __tablename__ = 'plano_contas'

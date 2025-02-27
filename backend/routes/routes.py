@@ -1,11 +1,11 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app # type: ignore
 from models.models import db, Produtor, Fazenda, Variedade, Atividade, ClassificacaoUva
 from models.financeiro_models import BalanceteItem, PlanoContas
 from datetime import datetime, timedelta
-from pytz import timezone
+from pytz import timezone # type: ignore
 from io import StringIO
 import csv
-import pandas as pd
+import pandas as pd # type: ignore
 import re
 
 # Criar Blueprint

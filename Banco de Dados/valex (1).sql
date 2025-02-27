@@ -56,7 +56,7 @@ DROP TABLE IF EXISTS `balancete_items`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `balancete_items` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `conta` varchar(20) DEFAULT NULL,
+  `conta` varchar(25) DEFAULT NULL,
   `reducao` int DEFAULT NULL,
   `tipo` varchar(1) DEFAULT NULL,
   `descricao` varchar(255) DEFAULT NULL,
@@ -65,8 +65,11 @@ CREATE TABLE `balancete_items` (
   `valor_periodo_credito` decimal(15,2) DEFAULT NULL,
   `valor_atual` decimal(15,2) DEFAULT NULL,
   `data_importacao` datetime DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9540 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `competencia` varchar(7) DEFAULT '2024-12',
+  PRIMARY KEY (`id`),
+  KEY `idx_balancete_conta` (`conta`),
+  KEY `idx_balancete_data_importacao` (`data_importacao`)
+) ENGINE=InnoDB AUTO_INCREMENT=2245 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -362,4 +365,4 @@ CREATE TABLE `variedade` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-25 21:03:16
+-- Dump completed on 2025-02-27 10:14:29
