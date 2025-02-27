@@ -803,3 +803,14 @@ def get_balancete(competencia):
     except Exception as e:
         current_app.logger.error(f"Erro ao buscar balancete: {str(e)}")
         return jsonify({"error": "Erro ao buscar dados do balancete", "details": str(e)}), 500
+    
+@api.route('/atividades/<int:id>', methods=['DELETE'])
+def delete_atividade(id):
+    try:
+        atividade = Atividade.query.get_or_404(id)
+        db.session.delete(atividade)
+        db.session.commit()
+        return '', 204
+    except Exception as e:
+        print(f"Erro ao excluir atividade: {str(e)}")
+        return jsonify({"error": "Erro ao excluir atividade"}), 500

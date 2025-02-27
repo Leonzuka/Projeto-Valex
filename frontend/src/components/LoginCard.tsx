@@ -62,14 +62,37 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
           alert('Credenciais inválidas!');
         }
       } else {
-        if (password === '123') {
+        // Sistema de senhas para cada cooperado
+        const senhasCooperados: {[key: string]: string} = {
+          'ADOLAR JOSE KOEHLER': 'Ajk@2025',
+          'ALDEMIR DE ARAUJO RODRIGUES': 'Ada#7531',
+          'ANDERSON DE CASTRO AMORIM': 'Adc$8642',
+          'GERALDO DE ARAUJO AMARIZ': 'Gda&2468',
+          'GILDETE ANTUNES DE MACEDO': 'Gad*1357',
+          'JAIRO JOSE CAVALCANTI COELHO': 'Jjc!9753',
+          'MARCELO GOMES PEREIRA': 'Mgp#2580',
+          'MARCOS ANTONIO DE MACEDO': 'Mad@1470',
+          'NADIR ANTONIO KOEHLER': 'Nak$3690',
+          'REGIVALDO LINO PEREIRA': 'Rlp&4812',
+          'ROGERIA DE OLIVEIRA SOARES': 'Rdo*5923',
+          'ROMULO NUNO SANTANA AMARIZ': 'Rns!7046'
+        };
+
+        const senhaCorreta = senhasCooperados[username] || '';
+        
+        if (password === senhaCorreta) {
           navigate('/cooperado-dashboard', { state: { cooperadoNome: username } });
         } else {
-          alert('Senha inválida!');
+          // Backup - permitir senha '123' para facilitar os testes
+          if (password === '123') {
+            navigate('/cooperado-dashboard', { state: { cooperadoNome: username } });
+          } else {
+            alert('Senha inválida para o cooperado selecionado!');
+          }
         }
       }
       setIsLoading(false);
-    }, 600); // Pequeno delay para mostrar o estado de loading
+    }, 300); // Pequeno delay para mostrar o estado de loading
   };
 
   return (

@@ -87,6 +87,8 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
   const [quantidadeCaixas, setQuantidadeCaixas] = useState('');
   const [selectedVariedade, setSelectedVariedade] = useState('');
   const [calculatedPallets, setCalculatedPallets] = useState<number>(0);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [deleteActivityId, setDeleteActivityId] = useState<number | null>(null);
 
   const fetchHistorico = useCallback(async () => {
     if (!produtor?.id) return;
@@ -250,6 +252,35 @@ const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       return () => clearInterval(interval);
     }
   }, [produtor?.id]);
+
+  const handleDeleteAtividade = (atividadeId: number) => {
+    setDeleteActivityId(atividadeId);
+    setShowDeleteModal(true);
+  };
+  
+  const confirmDeleteAtividade = async () => {
+    if (!deleteActivityId) return;
+    
+    try {
+      await axios.delete(`${process.env.REACT_APP_API_URL}/atividades/${deleteActivityId}`);
+      alert('Atividade excluída com sucesso!');
+      
+      // Atualizar as listas após exclusão
+      fetchHistorico();
+      fetchResumoDia();
+    } catch (error) {
+      console.error('Erro ao excluir atividade:', error);
+      alert('Erro ao excluir atividade. Tente novamente.');
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteActivityId(null);
+    }
+  };
+  
+  const cancelDeleteAtividade = () => {
+    setShowDeleteModal(false);
+    setDeleteActivityId(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -565,7 +596,7 @@ const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               Histórico de Atividades
             </h3>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
@@ -575,40 +606,51 @@ const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Classificação</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Caixas</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pallets</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {historico.map((atividade) => (
-                    <tr key={atividade.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.created_at}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          atividade.tipo_atividade === 'COLHEITA' 
-                            ? 'bg-green-100 text-green-800' 
-                            : atividade.tipo_atividade === 'EMBALAGEM'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {atividade.tipo_atividade}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.fazenda}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.variedade}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {atividade.tipo_atividade === 'EMBALAGEM' ? 
-                          atividade.classificacao
-                          : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {atividade.tipo_atividade === 'EMBALAGEM' ? atividade.caixas : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {atividade.tipo_atividade === 'COLHEITA' ? '-' : atividade.quantidade_pallets}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {historico.map((atividade) => (
+                  <tr key={atividade.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.created_at}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        atividade.tipo_atividade === 'COLHEITA' 
+                          ? 'bg-green-100 text-green-800' 
+                          : atividade.tipo_atividade === 'EMBALAGEM'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {atividade.tipo_atividade}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.fazenda}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{atividade.variedade}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {atividade.tipo_atividade === 'EMBALAGEM' ? 
+                        atividade.classificacao
+                        : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {atividade.tipo_atividade === 'EMBALAGEM' ? atividade.caixas : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {atividade.tipo_atividade === 'COLHEITA' ? '-' : atividade.quantidade_pallets}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button 
+                        onClick={() => handleDeleteAtividade(atividade.id)}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
               {historico.length === 0 && (
                 <div className="text-center py-4 text-gray-500">
                   Nenhuma atividade registrada ainda.
@@ -632,6 +674,37 @@ const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           </div>
         </div>
       </footer>
+      {showDeleteModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 transform transition-all">
+          <div className="flex items-center mb-4">
+            <div className="rounded-full bg-red-100 p-2 mr-3">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Confirmar Exclusão</h3>
+          </div>
+          <p className="mb-6 text-gray-600">
+            Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.
+          </p>
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={cancelDeleteAtividade}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmDeleteAtividade}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Excluir
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 };
