@@ -4,6 +4,7 @@ import DashboardCard from './DashboardCard';
 import { useNavigate } from 'react-router-dom';
 import PlanoContasReport from './PlanoContasReport';
 import FinanceiroReports from './FinanceiroReports'
+import './GestorDashboard.css';
 
 interface ResumoDia {
   produtor_id: number;

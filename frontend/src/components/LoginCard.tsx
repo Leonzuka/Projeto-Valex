@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './LoginCard.css';
+import { useTheme } from './ThemeContext';
 
 // Definir a URL base diretamente
-const API_URL = process.env.REACT_APP_API_URL || 'https://projeto-valex-production.up.railway.app/api';
+const API_URL = process.env.REACT_APP_API_URL || 'https://cooperativavalexfruit.up.railway.app/api';
 
 // Configuração global do axios
 axios.defaults.withCredentials = true;
@@ -21,6 +22,7 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
   const [password, setPassword] = useState('');
   const [produtores, setProdutores] = useState<Array<{ id: number; nome: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (type === 'cooperado') {
@@ -83,22 +85,19 @@ const LoginCard: React.FC<LoginCardProps> = ({ type, onClose }) => {
         if (password === senhaCorreta) {
           navigate('/cooperado-dashboard', { state: { cooperadoNome: username } });
         } else {
-          // Backup - permitir senha '123' para facilitar os testes
-          if (password === '123') {
-            navigate('/cooperado-dashboard', { state: { cooperadoNome: username } });
-          } else {
             alert('Senha inválida para o cooperado selecionado!');
           }
-        }
       }
       setIsLoading(false);
     }, 300); // Pequeno delay para mostrar o estado de loading
   };
 
+  const cardClasses = `login-card ${theme === 'dark' ? 'dark' : ''}`;
+
   return (
     <div className="login-overlay" onClick={onClose}>
       <div 
-        className="login-card" 
+        className={cardClasses}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="login-header">

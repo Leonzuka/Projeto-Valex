@@ -26,10 +26,10 @@ def create_app():
     app.logger.debug(f"FRONTEND_URL: {os.getenv('FRONTEND_URL')}")
     
     # Configuração CORS atualizada
-    frontend_url = os.getenv('FRONTEND_URL', 'https://frontend-production-dde7.up.railway.app')
+    frontend_url = os.getenv('FRONTEND_URL', 'https://cooperativavalexfruit.up.railway.app')
     CORS(app, 
-         resources={r"/api/*": {
-             "origins": [frontend_url, "http://localhost:3000", "https://frontend-production-dde7.up.railway.app"],
+        resources={r"/api/*": {
+            "origins": [frontend_url, "http://localhost:3000", "https://cooperativavalexfruit.up.railway.app"],
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
              "allow_headers": ["Content-Type", "Authorization"],
              "supports_credentials": True

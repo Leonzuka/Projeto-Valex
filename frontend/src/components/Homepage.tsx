@@ -1,71 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import LoginCard from 'components/LoginCard';
+import { useTheme } from './ThemeContext';
 import './Homepage.css';
 
 function Homepage() {
   const [showLogin, setShowLogin] = useState(false);
   const [loginType, setLoginType] = useState<'gestor' | 'cooperado' | null>(null);
-  const [theme, setTheme] = useState('light');
+  const { theme, toggleTheme } = useTheme();
   
-  // Verificar se há um tema salvo na primeira montagem
-  useEffect(() => {
-    // Verificar se o usuário tem uma preferência salva
-    const savedTheme = localStorage.getItem('theme');
-    
-    // Se houver, usar essa preferência
-    if (savedTheme) {
-      setTheme(savedTheme);
-      
-      if (savedTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    }
-    // Se não houver, verificar a preferência do sistema
-    else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setTheme('dark');
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
-  
-  // Efeito para atualizar o tema sempre que ele mudar
-  useEffect(() => {
-    // Definir o atributo data-theme no documento HTML
-    document.documentElement.setAttribute('data-theme', theme);
-    
-    // Adicionar ou remover a classe 'dark' no HTML para o Tailwind
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
-
   const handleButtonClick = (type: 'gestor' | 'cooperado') => {
     setLoginType(type);
     setShowLogin(true);
-  };
-
-  const toggleTheme = () => {
-    // Primeiro verificamos o tema atual
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    
-    // Depois atualizamos o estado
-    setTheme(newTheme);
-    
-    // Salvamos a preferência no localStorage
-    localStorage.setItem('theme', newTheme);
-    
-    // Definimos o atributo no elemento HTML
-    document.documentElement.setAttribute('data-theme', newTheme);
-    
-    // Adicionamos ou removemos a classe 'dark' diretamente
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
   };
   
   return (

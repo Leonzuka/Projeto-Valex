@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Homepage from './components/Homepage';
 import CooperadoRegistro from './components/CooperadoRegistro';
 import GestorDashboard from './components/GestorDashboard';
+import { ThemeProvider } from './components/ThemeContext';
 
 // Componente wrapper para passar as props corretamente
 const CooperadoDashboardWrapper = () => {
@@ -18,13 +19,15 @@ const CooperadoDashboardWrapper = () => {
 
 const App = () => {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Homepage />} />
-        <Route path="/cooperado-dashboard" element={<CooperadoDashboardWrapper />} />
-        <Route path="/gestor-dashboard" element={<GestorDashboard />} />
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Homepage />} />
+          <Route path="/cooperado-dashboard" element={<CooperadoDashboardWrapper />} />
+          <Route path="/gestor-dashboard" element={<GestorDashboard />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 };
 

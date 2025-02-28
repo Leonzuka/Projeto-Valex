@@ -1,0 +1,174 @@
+/* Melhorias para o modo escuro */
+.dark .bg-white {
+    background-color: #1e293b !important; /* slate-800 */
+    color: #e2e8f0 !important; /* slate-200 */
+  }
+  
+  .dark .bg-gray-50 {
+    background-color: #334155 !important; /* slate-700 */
+  }
+  
+  .dark .bg-gray-100 {
+    background-color: #0f172a !important; /* slate-900 */
+  }
+  
+  .dark .text-gray-700,
+  .dark .text-gray-800,
+  .dark .text-gray-900 {
+    color: #e2e8f0 !important; /* slate-200 */
+  }
+  
+  .dark .text-gray-500, 
+  .dark .text-gray-600 {
+    color: #94a3b8 !important; /* slate-400 */
+  }
+  
+  /* Cabeçalhos e títulos */
+  .dark h1.text-gray-900,
+  .dark h2.text-gray-900,
+  .dark h3.text-gray-900 {
+    color: #f1f5f9 !important; /* slate-100 */
+  }
+  
+  /* Cards no Dashboard */
+  .dark .dashboard-card {
+    background-color: #1e293b !important; /* slate-800 */
+    border-color: #334155 !important; /* slate-700 */
+  }
+  
+  .dark .dashboard-card:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 
+                0 8px 10px -6px rgba(0, 0, 0, 0.3) !important;
+  }
+  
+  /* Botões no modo escuro */
+  .dark button.bg-blue-600 {
+    background-color: #3b82f6 !important; /* blue-500 */
+  }
+  
+  .dark button.bg-blue-600:hover {
+    background-color: #2563eb !important; /* blue-600 */
+  }
+  
+  .dark button.bg-red-500 {
+    background-color: #ef4444 !important; /* red-500 */
+  }
+  
+  .dark button.bg-red-500:hover {
+    background-color: #dc2626 !important; /* red-600 */
+  }
+  
+  /* Cards de estatísticas */
+  .dark .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.2) !important; /* blue-500 with opacity */
+    color: #bfdbfe !important; /* blue-200 */
+  }
+  
+  .dark .bg-green-50 {
+    background-color: rgba(16, 185, 129, 0.2) !important; /* green-500 with opacity */
+    color: #a7f3d0 !important; /* green-200 */
+  }
+  
+  .dark .bg-yellow-50 {
+    background-color: rgba(245, 158, 11, 0.2) !important; /* yellow-500 with opacity */
+    color: #fde68a !important; /* yellow-200 */
+  }
+  
+  .dark .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.2) !important; /* red-500 with opacity */
+    color: #fecaca !important; /* red-200 */
+  }
+  
+  .dark .bg-purple-50 {
+    background-color: rgba(139, 92, 246, 0.2) !important; /* purple-500 with opacity */
+    color: #ddd6fe !important; /* purple-200 */
+  }
+  
+  .dark .bg-pink-50 {
+    background-color: rgba(236, 72, 153, 0.2) !important; /* pink-500 with opacity */
+    color: #fbcfe8 !important; /* pink-200 */
+  }
+  
+  /* Melhorias para textos coloridos */
+  .dark .text-blue-600 {
+    color: #60a5fa !important; /* blue-400 */
+  }
+  
+  .dark .text-green-600 {
+    color: #34d399 !important; /* green-400 */
+  }
+  
+  .dark .text-yellow-600 {
+    color: #fcd34d !important; /* yellow-300 */
+  }
+  
+  .dark .text-red-600 {
+    color: #f87171 !important; /* red-400 */
+  }
+  
+  .dark .text-purple-600 {
+    color: #a78bfa !important; /* purple-400 */
+  }
+  
+  /* Badges e classificações */
+  .dark .bg-blue-100.text-blue-700 {
+    background-color: rgba(59, 130, 246, 0.3) !important; /* blue-500 with opacity */
+    color: #bfdbfe !important; /* blue-200 */
+  }
+  
+  .dark .bg-green-100.text-green-700 {
+    background-color: rgba(16, 185, 129, 0.3) !important; /* green-500 with opacity */
+    color: #a7f3d0 !important; /* green-200 */
+  }
+  
+  .dark .bg-yellow-100.text-yellow-700 {
+    background-color: rgba(245, 158, 11, 0.3) !important; /* yellow-500 with opacity */
+    color: #fde68a !important; /* yellow-200 */
+  }
+  
+  .dark .bg-red-100.text-red-700 {
+    background-color: rgba(239, 68, 68, 0.3) !important; /* red-500 with opacity */
+    color: #fecaca !important; /* red-200 */
+  }
+  
+  .dark .bg-pink-100.text-pink-700 {
+    background-color: rgba(236, 72, 153, 0.3) !important; /* pink-500 with opacity */
+    color: #fbcfe8 !important; /* pink-200 */
+  }
+  
+  .dark .bg-purple-100.text-purple-700 {
+    background-color: rgba(139, 92, 246, 0.3) !important; /* purple-500 with opacity */
+    color: #ddd6fe !important; /* purple-200 */
+  }
+  
+  /* Tabela do Plano de Contas */
+  .dark table.min-w-full thead {
+    background-color: #334155 !important; /* slate-700 */
+  }
+  
+  .dark table.min-w-full th {
+    color: #f1f5f9 !important; /* slate-100 */
+  }
+  
+  .dark table.min-w-full tbody tr:nth-child(even) {
+    background-color: #1e293b !important; /* slate-800 */
+  }
+  
+  .dark table.min-w-full tbody tr:nth-child(odd) {
+    background-color: #0f172a !important; /* slate-900 */
+  }
+  
+  .dark table.min-w-full tbody tr:hover {
+    background-color: #334155 !important; /* slate-700 */
+  }
+  
+  /* Loading spinner para o modo escuro */
+  .dark .animate-spin {
+    border-color: #334155 !important; /* slate-700 */
+    border-top-color: #60a5fa !important; /* blue-400 */
+  }
+  
+  /* Ajuste para o fundo principal */
+  .dark.bg-gray-100 {
+    background-color: #0f172a !important; /* slate-900 */
+  }

@@ -11,7 +11,7 @@ def setup_cors_middleware(app):
         allowed_origins = [
             frontend_url, 
             "http://localhost:3000", 
-            "https://frontend-production-dde7.up.railway.app"
+            "https://cooperativavalexfruit.up.railway.app"
         ]
         
         # Obter a origem da requisição
