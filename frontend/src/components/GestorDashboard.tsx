@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DashboardCard from './DashboardCard';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from './ThemeContext';
 import PlanoContasReport from './PlanoContasReport';
 import FinanceiroReports from './FinanceiroReports'
 import './GestorDashboard.css';
@@ -36,6 +37,7 @@ const GestorDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string>('dashboard');
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     navigate('/');
@@ -94,7 +96,15 @@ const GestorDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className={`min-h-screen bg-gray-100 ${theme === 'dark' ? 'dark' : ''}`}>
+      {/* Botão de tema */}
+      <button 
+        onClick={toggleTheme} 
+        className="fixed top-6 right-6 w-12 h-12 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-lg text-xl transition-all duration-300 hover:scale-110 z-50"
+        aria-label="Alternar tema"
+      >
+        {theme === 'light' ? '🌙' : '☀️'}
+      </button>
       {/* Header */}
       <header className="bg-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

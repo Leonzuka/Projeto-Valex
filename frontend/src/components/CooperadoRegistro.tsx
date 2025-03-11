@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useCallback } from 'react';
 import { useTheme } from './ThemeContext';
-import './CooperadoRegistro.css'; // Importando os estilos específicos
+import './CooperadoRegistro.css';
 
 
 interface CooperadoRegistroProps {
@@ -91,7 +91,7 @@ const CooperadoRegistro: React.FC<CooperadoRegistroProps> = ({ cooperadoNome }) 
   const [calculatedPallets, setCalculatedPallets] = useState<number>(0);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [deleteActivityId, setDeleteActivityId] = useState<number | null>(null);
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   const fetchHistorico = useCallback(async () => {
     if (!produtor?.id) return;
@@ -341,6 +341,15 @@ const handleCaixasChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-blue-100 to-blue-200 ${theme === 'dark' ? 'dark' : ''}`}>
+      {/* Botão de tema */}
+      <button 
+        onClick={toggleTheme} 
+        className="fixed top-6 right-6 w-12 h-12 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 shadow-lg text-xl transition-all duration-300 hover:scale-110 z-50"
+        aria-label="Alternar tema"
+      >
+        {theme === 'light' ? '🌙' : '☀️'}
+      </button>
+      
       {/* Header mais moderno */}
       <header className="bg-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
